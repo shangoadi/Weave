@@ -20,7 +20,9 @@
 package weave.visualization.layers
 {
 	import flash.display.Bitmap;
+	import flash.display.BitmapData;
 	import flash.display.PixelSnapping;
+	import flash.geom.Point;
 	
 	import mx.core.UIComponent;
 	import mx.utils.NameUtil;
@@ -76,14 +78,18 @@ package weave.visualization.layers
 		 */
 		private function init():void
 		{
+			constantZeroPoint.x = 0;
+			constantZeroPoint.y = 0;
+			
 			// generate a name for debugging
 			name = NameUtil.createUniqueName(this);
 			// default size = 100%,100%
 			percentWidth = 100;
 			percentHeight = 100;
 			
-			this.addChild(backgroundBitmap);
-			this.addChild(plotBitmap);
+			//this.addChild(backgroundBitmap);
+			//this.addChild(plotBitmap);
+			this.addChild(aggregateBitmap);
 			
 			// make selectionFilter appear in session state.
 			registerLinkableChild(this, selectionFilter);
@@ -109,7 +115,8 @@ package weave.visualization.layers
 			// clean up everything that does not get cleaned up automatically.
 			disposeObjects(
 				backgroundBitmap.bitmapData,
-				plotBitmap.bitmapData
+				plotBitmap.bitmapData,
+				aggregateBitmap.bitmapData
 			);
 			if (!usingExternalSpatialIndex)
 				disposeObjects(spatialIndex);
@@ -188,17 +195,14 @@ package weave.visualization.layers
 		// these bitmaps will be added as a children
  		protected const backgroundBitmap:Bitmap = new Bitmap(null, PixelSnapping.AUTO, true);
 		protected const plotBitmap:Bitmap = new Bitmap(null, PixelSnapping.AUTO, true);
+		protected const aggregateBitmap:Bitmap = new Bitmap(null, PixelSnapping.AUTO, true);
 
-		// access the filters of the background layer only
-		public function get backgroundFilters():Array 			 { return backgroundBitmap.filters;  }
-		public function set backgroundFilters(value:Array):void  { backgroundBitmap.filters = value; }
-		
 		// access the filters of the plot layer only
-		public function get plotFilters():Array      			 { return plotBitmap.filters;        }
+		public function get plotFilters():Array      			 { return aggregateBitmap.filters;        }
 		
 		// value can be null for no style
 		// Array is of type BitmapFilter
-		public function set plotFilters(value:Array):void        { plotBitmap.filters = value;       }
+		public function set plotFilters(value:Array):void        { aggregateBitmap.filters = value;       }
 
 		/**
 		 * This function should be used instead of validateGraphics(), which should never be called directly.
@@ -275,7 +279,7 @@ package weave.visualization.layers
 			}
 			else
 			{
-				keys = _spatialIndex.getKeysBoundingBoxOverlap(_dataBounds); // all keys within visible data bounds
+				keys = _spatialIndex.getKeysBoundingBoxOverlap(_dataBounds);
 				//keys = plotter.keySet.keys;
 			}
 			
@@ -293,28 +297,35 @@ package weave.visualization.layers
 			if (shouldDraw && _spatialIndex.recordCount == 0)
 				_spatialIndex.createIndex(plotter);
 
+			var bgEmpty:Boolean = PlotterUtils.bitmapDataIsEmpty(backgroundBitmap);
+			var fgEmpty:Boolean = PlotterUtils.bitmapDataIsEmpty(plotBitmap);
+			
+			PlotterUtils.clear(aggregateBitmap.bitmapData);
+			
 			// draw background if this is not an overlay
-			if (!isOverlay.value && !PlotterUtils.bitmapDataIsEmpty(backgroundBitmap))
+			if (!isOverlay.value && !bgEmpty)
 			{
-				PlotterUtils.clear(backgroundBitmap.bitmapData);
+				//PlotterUtils.clear(backgroundBitmap.bitmapData);
 				if (shouldDraw)
 				{
-					plotter.drawBackground(_dataBounds, _screenBounds, backgroundBitmap.bitmapData);
+					plotter.drawBackground(_dataBounds, _screenBounds, aggregateBitmap.bitmapData);
 				}
 			}
 			
 			// draw plot
-			if (!PlotterUtils.bitmapDataIsEmpty(plotBitmap))
+			if (!fgEmpty)
 			{
-				PlotterUtils.clear(plotBitmap.bitmapData);
+				//PlotterUtils.clear(plotBitmap.bitmapData);
 				// get keys for plot, then draw the records
 
 				if (shouldDraw)
 				{
 					var keys:Array = getSelectedKeys() || []; // use empty Array if keys are null
-					plotter.drawPlot(keys, _dataBounds, _screenBounds, plotBitmap.bitmapData);
+					plotter.drawPlot(keys, _dataBounds, _screenBounds, aggregateBitmap.bitmapData);
 				}
 			}
+			
+			
 		}
 		
 		/**
@@ -325,6 +336,7 @@ package weave.visualization.layers
 		protected function handleSizeChange():void
 		{
 			//trace("sizeChanged",unscaledWidth,unscaledHeight);
+			PlotterUtils.setBitmapDataSize(aggregateBitmap, unscaledWidth, unscaledHeight);
 			var bitmapChanged:Boolean = PlotterUtils.setBitmapDataSize(plotBitmap, unscaledWidth, unscaledHeight);
 			if (bitmapChanged)
 				invalidateGraphics();
@@ -372,7 +384,8 @@ package weave.visualization.layers
 				_graphicsAreValid = true;
 			}
 		}
-
+		
+		private const constantZeroPoint:Point = new Point();
 		private function trace(...args):void
 		{
 			DebugUtils.debug_trace(this, selectionFilter.globalName, args);
