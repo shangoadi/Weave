@@ -167,7 +167,7 @@
 			private var _serverFileBrowser:ServerSHPFileViewer = null;
 			private function openServerBrowser():void
 			{
-				_serverFileBrowser = ServerSHPFileViewer.createServerFileViewer(this);
+				_serverFileBrowser = ServerSHPFileViewer.createServerFileViewer();
 				_serverFileBrowser.selectButton.addEventListener(MouseEvent.CLICK, serverFileBrowserSelectFile);				
 			}
 			private function serverFileBrowserSelectFile(e:MouseEvent):void

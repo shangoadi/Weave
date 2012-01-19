@@ -24,9 +24,11 @@ package weave
 	import flash.events.ContextMenuEvent;
 	import flash.events.Event;
 	import flash.events.SecurityErrorEvent;
+	import flash.events.TimerEvent;
 	import flash.external.ExternalInterface;
 	import flash.net.FileFilter;
 	import flash.net.FileReference;
+	import flash.net.SharedObject;
 	import flash.net.URLRequest;
 	import flash.net.URLVariables;
 	import flash.net.navigateToURL;
@@ -35,6 +37,7 @@ package weave
 	import flash.ui.ContextMenuItem;
 	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
+	import flash.utils.Timer;
 	import flash.utils.getQualifiedClassName;
 	
 	import mx.containers.Canvas;
@@ -64,6 +67,7 @@ package weave
 	import weave.data.DataSources.WeaveDataSource;
 	import weave.data.KeySets.KeyFilter;
 	import weave.data.KeySets.KeySet;
+	import weave.editors.SessionHistorySlider;
 	import weave.editors.WeavePropertiesEditor;
 	import weave.editors.managers.AddDataSourcePanel;
 	import weave.editors.managers.EditDataSourcePanel;
@@ -227,7 +231,7 @@ package weave
 			
 		}
 
-		
+		private var saveTimer:Timer = new Timer( 10000 );
 		/**
 		 * This needs to be a function because FlashVars can't be fetched while the application is loading.
 		 */
@@ -248,6 +252,14 @@ package weave
 					{
 						_this.enabled = true;
 						adminService = pendingAdminService;
+						
+						saveTimer.addEventListener(TimerEvent.TIMER, timerHandler);
+						saveTimer.start();
+						
+						function timerHandler(e:TimerEvent):void {
+							storeStateinFlashMemory();
+						}
+						
 						setupVisMenuItems(); // make sure 'save session state to server' is shown
 						applicationComplete();
 					};
@@ -272,9 +284,14 @@ package weave
 			}
 			
 			// load the session state file
-			var fileName:String = getFlashVarConfigFileName() || DEFAULT_CONFIG_FILE_NAME;
-			var noCacheHack:String = "?" + (new Date()).getTime(); // prevent flex from using cache
-			WeaveAPI.URLRequestUtils.getURL(new URLRequest(fileName + noCacheHack), handleConfigFileDownloaded, handleConfigFileFault, fileName);
+			
+			if (getFlashVarRecover()) 
+				handleConfigFileDownloaded(null);
+			else {
+				var fileName:String = getFlashVarConfigFileName() || DEFAULT_CONFIG_FILE_NAME;
+				var noCacheHack:String = "?" + (new Date()).getTime(); // prevent flex from using cache
+				WeaveAPI.URLRequestUtils.getURL(new URLRequest(fileName + noCacheHack), handleConfigFileDownloaded, handleConfigFileFault, fileName);
+			}
 		}
 		
 		private function handleBackgroundColorChange():void
@@ -296,6 +313,11 @@ package weave
 		private function getFlashVarAdminConnectionName():String
 		{
 			return _flashVars['adminSession'] as String;
+		}
+		
+		private function getFlashVarRecover():Boolean 
+		{
+			return _flashVars['recover'] == "true";
 		}
 		
 		/**
@@ -465,6 +487,20 @@ package weave
 
 		private var adminService:LocalAsyncService = null;
 		
+		public function storeStateinFlashMemory():void {
+			
+			var sharedCookie:SharedObject = SharedObject.getLocal("autoSessionState");
+			sharedCookie.data.sessionstate = Weave.createWeaveFileContent();
+			sharedCookie.flush();
+			
+		}
+		
+		public function loadStatefromFlashMemory():Object {
+			
+			var sharedCookie:SharedObject = SharedObject.getLocal("autoSessionState");
+			return sharedCookie.data.sessionstate;
+			
+		}
 		
 		private function copySessionStateToClipboard():void
 		{
@@ -728,10 +764,12 @@ package weave
 		public function loadSessionState(fileContent:Object, fileName:String):void
 		{
 			DebugTimer.begin();
-			var content:Object = null;
-			try {
-				content = WeaveFileFormat.readFile(ByteArray(fileContent));
-			} catch (e:Error) { }
+			var content:Object = fileContent;
+			if ( content is ByteArray )  {
+				try {
+					content = WeaveFileFormat.readFile(ByteArray(fileContent));
+				} catch (e:Error) { }
+			}
 			
 			if (content)
 			{
@@ -1138,7 +1176,12 @@ package weave
 		private function handleConfigFileDownloaded(event:ResultEvent, token:Object = null):void
 		{
 			var fileName:String = token as String;
-			loadSessionState(event.result, fileName);
+			
+			if (getFlashVarRecover()) 
+				loadSessionState(loadStatefromFlashMemory(), "autoSessionState");
+			
+			else 
+				loadSessionState(event.result, fileName);
 			
 			if (getFlashVarEditable())
 			{

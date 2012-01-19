@@ -29,7 +29,7 @@
 	borderThicknessBottom="0" borderThicknessLeft="5" borderThicknessRight="5" borderThicknessTop="0"
 	verticalScrollPolicy="off"
 	horizontalScrollPolicy="off"
-	width="640" height="480"
+	width="640" height="400"
 	roundedBottomCorners="true"
 	creationComplete="creationComplete(event)">
 	
@@ -64,6 +64,7 @@
 			import flash.utils.setInterval;
 			
 			import mx.controls.Alert;
+			import mx.core.Application;
 			import mx.core.Container;
 			import mx.events.FlexEvent;
 			import mx.events.ListEvent;
@@ -71,8 +72,9 @@
 			
 			import weave.services.AdminInterface;
 			
-			public static function createServerFileViewer(parent:DisplayObject):ServerSHPFileViewer
+			public static function createServerFileViewer():ServerSHPFileViewer
 			{
+				var parent:DisplayObject = Application.application as DisplayObject;
 				var fileViewer:ServerSHPFileViewer = PopUpManager.createPopUp(parent, ServerSHPFileViewer, true) as ServerSHPFileViewer;
 				PopUpManager.centerPopUp(fileViewer);
 				fileViewer.cancelButton.addEventListener(MouseEvent.CLICK, function(..._):void { PopUpManager.removePopUp(fileViewer); });

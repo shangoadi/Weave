@@ -141,6 +141,7 @@
 			searchTerm.text = "";
 			search();
 		}
+		
 		private function getFilteredTree(node:Object):Object
 		{
 			if (node == null)

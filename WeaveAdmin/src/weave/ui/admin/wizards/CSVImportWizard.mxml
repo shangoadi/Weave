@@ -91,6 +91,7 @@
 	</mx:VBox>
 	<mx:Script>
 		<![CDATA[
+			import mx.core.Application;
 			import mx.managers.PopUpManager;
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
@@ -174,7 +175,7 @@
 			}
 			private function openServerBrowser():void
 			{
-				_serverFileBrowser = ServerCSVFileViewer.createServerFileViewer(this);
+				_serverFileBrowser = ServerCSVFileViewer.createServerFileViewer();
 				_serverFileBrowser.selectButton.addEventListener(MouseEvent.CLICK, serverFileBrowserSelectFile);				
 			}
 			private function serverFileBrowserSelectFile(e:MouseEvent):void

@@ -29,18 +29,14 @@
 	borderThicknessBottom="0" borderThicknessLeft="5" borderThicknessRight="5" borderThicknessTop="0"
 	verticalScrollPolicy="off"
 	horizontalScrollPolicy="off"
-	height="480" width="640"
+	y="0"
+	height="400" width="640"
 	roundedBottomCorners="true"
+	creationPolicy="all"
 	creationComplete="creationComplete(event)">
 	
 	<mx:VBox x="0" y="0" width="100%" height="100%" backgroundAlpha="1" backgroundColor="#C5C3A8">
-		<mx:ControlBar paddingTop="0" paddingBottom="0" width="100%">
-			<mx:Spacer width="100%" />
-			<mx:Label id="statusLabel" text="{AdminInterface.instance.uploadedCSVFiles.length} file(s)" />
-			<mx:Spacer width="20" />
-			<mx:Button id="refreshButton" label="Refresh" click="refresh(event);" />
-		</mx:ControlBar>
-		
+
 		<TextInputWithPrompt id="searchTerm" width="100%" height="30" clear="search()"
 							 cornerRadius="5" fontFamily="helvetica" fontSize="11" fontWeight="bold"
 							 change="search()" paddingLeft="7" paddingRight="7" paddingTop="7"
@@ -59,6 +55,9 @@
 		
 		<mx:ControlBar paddingTop="5" paddingBottom="5" width="100%">
 			<mx:Spacer width="100%"/>
+			<mx:Label id="statusLabel" text="{AdminInterface.instance.uploadedCSVFiles.length} file(s)" />
+			<mx:Spacer width="20" />
+			<mx:Button id="refreshButton" label="Refresh" click="refresh(event);" />
 			<mx:Button id="selectButton" label="Select" />
 			<mx:Button id="cancelButton" label="Close"  />
 		</mx:ControlBar>
@@ -66,12 +65,11 @@
 	
 	<mx:Script>
 		<![CDATA[
-			
-			
 			import flash.utils.clearInterval;
 			import flash.utils.setInterval;
 			
 			import mx.controls.Alert;
+			import mx.core.Application;
 			import mx.core.Container;
 			import mx.events.FlexEvent;
 			import mx.events.ListEvent;
@@ -109,8 +107,9 @@
 				}
 			}
 			
-			public static function createServerFileViewer(parent:DisplayObject):ServerCSVFileViewer
+			public static function createServerFileViewer():ServerCSVFileViewer
 			{
+				var parent:DisplayObject = Application.application as DisplayObject;
 				var fileViewer:ServerCSVFileViewer = PopUpManager.createPopUp(parent, ServerCSVFileViewer, true) as ServerCSVFileViewer;
 				PopUpManager.centerPopUp(fileViewer);
 				fileViewer.cancelButton.addEventListener(MouseEvent.CLICK, function(..._):void { PopUpManager.removePopUp(fileViewer); });
@@ -201,5 +200,6 @@
 			fontWeight: normal;
 			color: white;
 		}
+		.button { height:30; }
 	</mx:Style>
 </mx:Panel>
