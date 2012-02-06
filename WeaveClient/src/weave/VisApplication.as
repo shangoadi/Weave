@@ -264,10 +264,17 @@ package weave
 		
 		private function downloadConfigFile():void
 		{
-			// load the session state file
-			var fileName:String = getFlashVarConfigFileName() || DEFAULT_CONFIG_FILE_NAME;
-			var noCacheHack:String = "?" + (new Date()).getTime(); // prevent flex from using cache
-			WeaveAPI.URLRequestUtils.getURL(new URLRequest(fileName + noCacheHack), handleConfigFileDownloaded, handleConfigFileFault, fileName);
+			if (Weave.handleWeaveReload())
+			{
+				handleConfigFileDownloaded();
+			}
+			else
+			{
+				// load the session state file
+				var fileName:String = getFlashVarConfigFileName() || DEFAULT_CONFIG_FILE_NAME;
+				var noCacheHack:String = "?" + (new Date()).getTime(); // prevent flex from using cache
+				WeaveAPI.URLRequestUtils.getURL(new URLRequest(fileName + noCacheHack), handleConfigFileDownloaded, handleConfigFileFault, fileName);
+			}
 		}
 		
 		private function handleBackgroundColorChange():void
@@ -732,7 +739,8 @@ package weave
 			try
 			{
 				// attempt to parse as a Weave archive
-				Weave.loadWeaveFileContent(ByteArray(fileContent));
+				if (fileContent)
+					Weave.loadWeaveFileContent(ByteArray(fileContent));
 			}
 			catch (error:Error)
 			{
@@ -796,15 +804,12 @@ package weave
 						}
 					}
 					
-					Weave.setSessionStateXML(xml);
+					Weave.loadWeaveFileContent(xml);
 					
-					// An empty subset is not of much use.  If the subset is empty, reset it to include all records.
-					var subset:KeyFilter = Weave.root.getObject(Weave.DEFAULT_SUBSET_KEYFILTER) as KeyFilter;
-					if (subset.includeMissingKeys.value == false && subset.included.keys.length == 0 && subset.excluded.keys.length == 0)
-						subset.includeMissingKeys.value = true;
-					
-					// begin with empty history after loading the session state from the xml
-					Weave.history.clearHistory();
+//					// An empty subset is not of much use.  If the subset is empty, reset it to include all records.
+//					var subset:KeyFilter = Weave.root.getObject(Weave.DEFAULT_SUBSET_KEYFILTER) as KeyFilter;
+//					if (subset.includeMissingKeys.value == false && subset.included.keys.length == 0 && subset.excluded.keys.length == 0)
+//						subset.includeMissingKeys.value = true;
 				}
 			}
 			DebugTimer.end('loadSessionState', fileName);
@@ -1154,10 +1159,13 @@ package weave
 		/**
 		 * This function handles parsing the config file once it has downloaded.
 		 */
-		private function handleConfigFileDownloaded(event:ResultEvent, token:Object = null):void
+		private function handleConfigFileDownloaded(event:ResultEvent = null, token:Object = null):void
 		{
 			var fileName:String = token as String;
-			loadSessionState(event.result, fileName);
+			if (!event)
+				loadSessionState(null, null);
+			else
+				loadSessionState(event.result, fileName);
 			
 			if (getFlashVarEditable())
 			{
