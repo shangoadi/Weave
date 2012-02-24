@@ -187,6 +187,7 @@ package weave
 		public const windowSnapGridSize:LinkableString = new LinkableString("1%", verifyWindowSnapGridSize); // window snap grid size in pixels
 		
 		public const cssStyleSheetName:LinkableString = new LinkableString("weaveStyle.css"); // CSS Style Sheet Name/URL
+		public const controlPanelScale:LinkableNumber = new LinkableNumber(1);
 		public const backgroundColor:LinkableNumber = new LinkableNumber(DEFAULT_BACKGROUND_COLOR, isFinite);
 		
 		// enable/disable advanced features

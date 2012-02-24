@@ -48,16 +48,20 @@
 			import weave.api.core.ILinkableDynamicObject;
 			import weave.api.core.ILinkableObject;
 			import weave.api.getSessionState;
+			import weave.api.linkBindableProperty;
 			import weave.api.setSessionState;
 			import weave.core.ClassUtils;
 			import weave.core.DynamicState;
+			import weave.core.LinkableNumber;
 			import weave.core.SessionManager;
 			
-
+			private var scale:LinkableNumber = new LinkableNumber(1);
 			private var _targetObjects:Array = null;
 			private var _savedTargetSessionStates:Array;
 			private var _savedGlobalSessionStates:Array;
 			private var createdChildren:Boolean = false;
+			
+			
 			
 			override public function set width(value:Number):void
 			{
@@ -69,6 +73,11 @@
 			{
 				super.height = value;
 				panelHeight.value = String(value);
+			}
+
+			public function scalePanel(value:Number):void
+			{
+				controlPanel.scaleX = controlPanel.scaleY = value;
 			}
 			
 			/**
@@ -94,6 +103,10 @@
 				pinnable.value = false;
 				minimizable.value = false;
 				maximizable.value = false;
+				
+				linkBindableProperty(Weave.properties.controlPanelScale, this, 'this.scaleX');
+				linkBindableProperty(Weave.properties.controlPanelScale, this, 'this.scaleY');	
+
 			}
 			
 			public function set children(array:Array):void
