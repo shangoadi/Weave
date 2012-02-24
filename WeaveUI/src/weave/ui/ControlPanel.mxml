@@ -77,7 +77,9 @@
 
 			public function scalePanel(value:Number):void
 			{
-				controlPanel.scaleX = controlPanel.scaleY = value;
+				if (this.hasOwnProperty('controlPanel.scaleX')) {
+					controlPanel.scaleX = controlPanel.scaleY = value;
+				}
 			}
 			
 			/**
@@ -104,9 +106,11 @@
 				minimizable.value = false;
 				maximizable.value = false;
 				
-				linkBindableProperty(Weave.properties.controlPanelScale, this, 'this.scaleX');
-				linkBindableProperty(Weave.properties.controlPanelScale, this, 'this.scaleY');	
-
+				if (this.hasOwnProperty('scaleX')) { 
+					linkBindableProperty(Weave.properties.controlPanelScale, this, 'scaleX');
+					linkBindableProperty(Weave.properties.controlPanelScale, this, 'scaleY');	
+				}
+				
 			}
 			
 			public function set children(array:Array):void
