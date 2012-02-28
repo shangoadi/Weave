@@ -21,6 +21,7 @@ package weave.core
 {
 	import flash.events.Event;
 	import flash.utils.Dictionary;
+	import flash.utils.getTimer;
 	
 	import weave.api.WeaveAPI;
 	import weave.api.core.ICallbackCollection;
@@ -36,7 +37,7 @@ package weave.core
 		/**
 		 * Set this to true to enable stack traces for debugging.
 		 */
-		public static var debug:Boolean = false;
+		public static var debug:Boolean = true;
 
 		/**
 		 * If specified, the preCallback function will be called immediately before running each callback.
@@ -214,8 +215,13 @@ package weave.core
 						entry.recursionCount++; // increase count to signal that we are currently running this callback.
 						if (_preCallback != null)
 							_preCallback.apply(null, preCallbackParams);
-						
+						var startTime:int = getTimer();
 						entry.callback.apply(null, entry.parameters);
+						var endTime:int = getTimer();
+						trace(this, endTime - startTime);
+						if(( endTime - startTime ) > 3000){
+							trace(endTime - startTime);
+						}
 						
 						entry.recursionCount--; // decrease count because the callback finished.
 					}

@@ -180,12 +180,14 @@ package weave.core
 					// don't call the function if the relevantContext was disposed of.
 					if (!WeaveAPI.SessionManager.objectWasDisposed(args[0]))
 						(args[1] as Function).apply(null, args[2]);
+					if (getTimer() - _currentFrameStartTime > 3000)
+						trace(stackTrace);
 				}
 			}
 			
 			if (_callLaterArray.length > 0 && UIComponentGlobals.callLaterSuspendCount <= 0)
 			{
-				//trace("handle ENTER_FRAME, " + _callLaterArray.length + " callLater functions, " + currentFrameElapsedTime + " ms elapsed this frame");
+				trace("handle ENTER_FRAME, " + _callLaterArray.length + " callLater functions, " + currentFrameElapsedTime + " ms elapsed this frame");
 				// Make a copy of the function calls and clear the private array before executing any functions.
 				// This allows the private array to be filled up as a result of executing the functions,
 				// and prevents from newly added functions from being called until the next frame.
@@ -196,6 +198,9 @@ package weave.core
 					// if elapsed time reaches threshold, call everything else later
 					if (getTimer() - _currentFrameStartTime > maxComputationTimePerFrame)
 					{
+						trace(getTimer() - _currentFrameStartTime );
+						if (getTimer() - _currentFrameStartTime > 3000)
+							trace(stackTrace);
 						// To preserve the order they were added, put the remaining callLater
 						// functions for this frame in front of any others that may have been added.
 						var j:int = calls.length;
@@ -213,6 +218,8 @@ package weave.core
 						// if it takes a long time (> 1000 ms), something's wrong...
 						
 						(args[1] as Function).apply(null, args[2]);
+						if (getTimer() - _currentFrameStartTime > 3000)
+							trace(stackTrace);
 					}
 				}
 			}

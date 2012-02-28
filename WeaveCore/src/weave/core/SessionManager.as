@@ -1110,6 +1110,9 @@ package weave.core
 			var synchronize:Function = function(firstParam:* = undefined, callingLater:Boolean = false):void
 			{
 				// unlink if linkableVariable was disposed of
+				if(bindablePropertyName == "verticalScrollPosition"){
+					trace("");
+				}
 				if (objectWasDisposed(linkableVariable))
 				{
 					unlinkBindableProperty(linkableVariable, bindableParent, bindablePropertyName);
