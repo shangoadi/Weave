@@ -146,6 +146,16 @@ package weave.core
 		 */
 		private const maxComputationTimePerFrame:int = 100;
 
+		public static function get isExecutionTimeHigher():Boolean{
+			if (WeaveAPI.StageUtils.currentFrameElapsedTime > 3000)
+			{
+				return true;
+			}
+			else
+				return false;
+				
+		}
+		
 		/**
 		 * This function gets called on ENTER_FRAME events.
 		 */
@@ -180,7 +190,7 @@ package weave.core
 					// don't call the function if the relevantContext was disposed of.
 					if (!WeaveAPI.SessionManager.objectWasDisposed(args[0]))
 						(args[1] as Function).apply(null, args[2]);
-					if (getTimer() - _currentFrameStartTime > 3000)
+					if(isExecutionTimeHigher)
 						trace(stackTrace);
 				}
 			}
@@ -199,7 +209,7 @@ package weave.core
 					if (getTimer() - _currentFrameStartTime > maxComputationTimePerFrame)
 					{
 						trace(getTimer() - _currentFrameStartTime );
-						if (getTimer() - _currentFrameStartTime > 3000)
+						if(isExecutionTimeHigher)
 							trace(stackTrace);
 						// To preserve the order they were added, put the remaining callLater
 						// functions for this frame in front of any others that may have been added.
@@ -218,7 +228,7 @@ package weave.core
 						// if it takes a long time (> 1000 ms), something's wrong...
 						
 						(args[1] as Function).apply(null, args[2]);
-						if (getTimer() - _currentFrameStartTime > 3000)
+						if(isExecutionTimeHigher)
 							trace(stackTrace);
 					}
 				}

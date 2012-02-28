@@ -215,13 +215,13 @@ package weave.core
 						entry.recursionCount++; // increase count to signal that we are currently running this callback.
 						if (_preCallback != null)
 							_preCallback.apply(null, preCallbackParams);
-						var startTime:int = getTimer();
+						//var startTime:int = getTimer();
 						entry.callback.apply(null, entry.parameters);
-						var endTime:int = getTimer();
-						trace(this, endTime - startTime);
-						if(( endTime - startTime ) > 3000){
+						//var endTime:int = getTimer();
+						//trace(this, endTime - startTime);
+					/*	if(( endTime - startTime ) > 3000){
 							trace(endTime - startTime);
-						}
+						}*/
 						
 						entry.recursionCount--; // decrease count because the callback finished.
 					}
