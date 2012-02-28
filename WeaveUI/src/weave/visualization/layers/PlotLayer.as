@@ -48,6 +48,7 @@ package weave.visualization.layers
 	import weave.core.StageUtils;
 	import weave.data.KeySets.FilteredKeySet;
 	import weave.primitives.Bounds2D;
+	import weave.utils.DebugTimer;
 	import weave.utils.DebugUtils;
 	import weave.utils.PlotterUtils;
 	import weave.utils.SpatialIndex;
@@ -317,7 +318,12 @@ package weave.visualization.layers
 			var shouldDraw:Boolean = (unscaledWidth * unscaledHeight > 0) && shouldBeRendered();
 			//validate spatial index if necessary
 			if (shouldDraw)
+			{
+				DebugTimer.begin();
+				
 				validateSpatialIndex();
+				DebugTimer.end('validate index');
+			}
 			
 			// draw plot
 			if (!PlotterUtils.bitmapDataIsEmpty(_plotBitmap))
@@ -331,7 +337,12 @@ package weave.visualization.layers
 						plotter.drawBackground(_dataBounds, _screenBounds, _plotBitmap.bitmapData);
 					
 					var keys:Array = getSelectedKeys() || []; // use empty Array if keys are null
+					
+					DebugTimer.begin();
+					
 					plotter.drawPlot(keys, _dataBounds, _screenBounds, _plotBitmap.bitmapData);
+					
+					DebugTimer.end('drawPlot');
 				}
 			}
 			//trace(name,'end updateDisplayList', _dataBounds);

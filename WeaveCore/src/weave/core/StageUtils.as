@@ -197,7 +197,6 @@ package weave.core
 			
 			if (_callLaterArray.length > 0 && UIComponentGlobals.callLaterSuspendCount <= 0)
 			{
-				trace("handle ENTER_FRAME, " + _callLaterArray.length + " callLater functions, " + currentFrameElapsedTime + " ms elapsed this frame");
 				// Make a copy of the function calls and clear the private array before executing any functions.
 				// This allows the private array to be filled up as a result of executing the functions,
 				// and prevents from newly added functions from being called until the next frame.

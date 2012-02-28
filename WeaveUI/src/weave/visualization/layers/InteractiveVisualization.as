@@ -44,6 +44,7 @@ package weave.visualization.layers
 	import weave.data.KeySets.KeySet;
 	import weave.primitives.Bounds2D;
 	import weave.utils.CustomCursorManager;
+	import weave.utils.DebugTimer;
 	import weave.utils.ProbeTextUtils;
 	import weave.utils.SpatialIndex;
 	import weave.utils.ZoomUtils;
@@ -56,12 +57,6 @@ package weave.visualization.layers
 	public class InteractiveVisualization extends PlotLayerContainer
 	{
 		public function InteractiveVisualization()
-		{
-			super();
-			init();
-		}
-		
-		private function init():void
 		{
 			doubleClickEnabled = true;
 			
@@ -279,6 +274,8 @@ package weave.visualization.layers
 		
 		protected function handleMouseEvent(event:MouseEvent):void
 		{
+			DebugTimer.begin();
+			
 			// determine proper event type
 			var eventType:String = null;
 			switch (event.type)
@@ -334,6 +331,7 @@ package weave.visualization.layers
 				updateMouseMode(eventType);
 			}
 			
+			DebugTimer.lap('begin switch');
 			var dragReleased:Boolean = mouseDragActive && !event.buttonDown;
 			switch (_mouseMode)
 			{
@@ -432,6 +430,7 @@ package weave.visualization.layers
 					break;
 				}
 			}
+			DebugTimer.lap('end switch');
 			
 			// finally, unset mouseDragActive if button was released
 			if (dragReleased)
@@ -449,6 +448,7 @@ package weave.visualization.layers
 //			}
 			
 			updateSelectionRectangleGraphics();
+			DebugTimer.end('end mouse move');
 		}
 		
 		//TODO - use this

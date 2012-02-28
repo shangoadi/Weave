@@ -45,6 +45,7 @@ package weave.visualization.plotters
 	import weave.data.AttributeColumns.ReprojectedGeometryColumn;
 	import weave.data.AttributeColumns.StreamedGeometryColumn;
 	import weave.primitives.GeneralizedGeometry;
+	import weave.utils.DebugTimer;
 	import weave.utils.PlotterUtils;
 	import weave.visualization.plotters.styles.ExtendedFillStyle;
 	import weave.visualization.plotters.styles.ExtendedLineStyle;
@@ -265,10 +266,14 @@ package weave.visualization.plotters
 		
 		override public function drawPlot(recordKeys:Array, dataBounds:IBounds2D, screenBounds:IBounds2D, destination:BitmapData):void
 		{
+			DebugTimer.begin();
 			var minImportance:Number = getDataAreaPerPixel(dataBounds, screenBounds) * pixellation.value;
 			
 			// find nested StreamedGeometryColumn objects
 			var descendants:Array = WeaveAPI.SessionManager.getLinkableDescendants(geometryColumn, StreamedGeometryColumn);
+			
+			DebugTimer.lap('descendants');
+			
 			// request the required detail
 			for each (var streamedColumn:StreamedGeometryColumn in descendants)
 			{
@@ -284,6 +289,7 @@ package weave.visualization.plotters
 				if (!requestedDataBounds.isUndefined())
 					streamedColumn.requestGeometryDetail(requestedDataBounds, requestedMinImportance);
 			}
+			DebugTimer.lap('request detail');
 			
 			var graphics:Graphics = tempShape.graphics;
 			graphics.clear();
@@ -320,8 +326,10 @@ package weave.visualization.plotters
 				}
 				graphics.endFill();
 			}
+			DebugTimer.lap('loop through records');
 			
 			destination.draw(tempShape);
+			DebugTimer.end('bitmap draw');
 		}
 		
 		private static const tempPoint:Point = new Point(); // reusable object

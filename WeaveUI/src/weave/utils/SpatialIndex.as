@@ -21,6 +21,7 @@ package weave.utils
 {
 	import flash.geom.Point;
 	import flash.utils.Dictionary;
+	import flash.utils.getTimer;
 	
 	import weave.Weave;
 	import weave.api.WeaveAPI;
@@ -150,6 +151,9 @@ package weave.utils
 				// make a copy of the keys vector
 				VectorUtils.copy(plotter.keySet.keys, _keysArray);
 				
+				//TODO: make this while loop part of the _insertNext asynchronous function
+				
+				DebugTimer.begin();
 				// save dataBounds for each key
 				i = _keysArray.length;
 				while (--i > -1)
@@ -163,6 +167,7 @@ package weave.utils
 						_keyToGeometriesMap[key] = geoms;
 					}
 				}
+				DebugTimer.end('spatial index');
 			}
 			
 			// if auto-balance is disabled, randomize insertion order
