@@ -115,7 +115,7 @@ package weave.data.AttributeColumns
 					reportError(e);
 				}
 			}
-
+			_uniqueKeys.length  = 0;
 			// save a mapping from keys to data
 			for (index = keys.length - 1; index >= 0; index--)
 			{
@@ -123,16 +123,16 @@ package weave.data.AttributeColumns
 				var number:Number = numericData[index] as Number; // fast and safe because numericData is Vector.<Number>
 				if (!isNaN(number))
 				{
+					if(_keyToNumericDataMapping[key] === undefined)// makes sure key is pushed only once
+					{
+						_uniqueKeys.push(key);
+					}
 					_keyToNumericDataMapping[key] = number;
+					
 					_keyToStringDataMapping[key] = StandardLib.asString(numberToStringFunction(number));
 				}
 			}
 
-			// save list of unique keys
-			index = 0;
-			for (key in _keyToNumericDataMapping)
-				_uniqueKeys[index++] = key;
-			_uniqueKeys.length = index; // trim to new size
 			
 			triggerCallbacks();
 		}
