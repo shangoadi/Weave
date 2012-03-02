@@ -202,7 +202,10 @@ package weave.utils
 		 */
 		public function decodeMetadataTileList(stream:ByteArray):void
 		{
+			DebugTimer.begin();
 			decodeTileList(metadataTiles, metadataTileIDToKDNodeMapping, stream);
+			DebugTimer.end("decodeMetadataTileList");
+			
 		}
 		/**
 		 * This function will decode a tile list stream.
@@ -210,7 +213,9 @@ package weave.utils
 		 */
 		public function decodeGeometryTileList(stream:ByteArray):void
 		{
+			DebugTimer.begin();
 			decodeTileList(geometryTiles, geometryTileIDToKDNodeMapping, stream);
+			DebugTimer.end("decodeGeometryTileList");
 		}
 		/**
 		 * @private
