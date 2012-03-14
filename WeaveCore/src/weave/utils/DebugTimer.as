@@ -87,12 +87,12 @@ package weave.utils
 			}
 			trace(lines.join('\n'));
 			
-			if (elapsedTime > 1000)
+			/*if (elapsedTime > 1000)
 				trace( "------------Less Attention--------------");
 			if (elapsedTime > 2000)
 				trace( "------------ Medium Attention------------");
 			if (elapsedTime > 3000)
-				trace("&&&&&&&&&&&&& High Attention &&&&&&&&&&&&&&&&");
+				trace("&&&&&&&&&&&&& High Attention &&&&&&&&&&&&&&&&");*/
 			
 			return elapsedTime;
 		}

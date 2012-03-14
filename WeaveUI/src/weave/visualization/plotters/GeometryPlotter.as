@@ -272,7 +272,7 @@ package weave.visualization.plotters
 			// find nested StreamedGeometryColumn objects
 			var descendants:Array = WeaveAPI.SessionManager.getLinkableDescendants(geometryColumn, StreamedGeometryColumn);
 			
-			DebugTimer.lap('descendants');
+			DebugTimer.lap('descendants Array - drawPlot - GeometryPlotter');
 			
 			// request the required detail
 			for each (var streamedColumn:StreamedGeometryColumn in descendants)
@@ -289,8 +289,8 @@ package weave.visualization.plotters
 				if (!requestedDataBounds.isUndefined())
 					streamedColumn.requestGeometryDetail(requestedDataBounds, requestedMinImportance);
 			}
-			DebugTimer.lap('request detail');
-			
+			DebugTimer.end('loop through  descendants Array - drawPlot - GeometryPlotter');
+			 return;
 			var graphics:Graphics = tempShape.graphics;
 			graphics.clear();
 			// loop through the records and draw the geometries

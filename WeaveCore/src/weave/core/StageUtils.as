@@ -165,8 +165,8 @@ package weave.core
 			_previousFrameElapsedTime = currentTime - _currentFrameStartTime;
 			_currentFrameStartTime = currentTime;
 			
-			if (_previousFrameElapsedTime > 3000)
-				trace(_previousFrameElapsedTime);
+			/*if (_previousFrameElapsedTime > 3000)
+				trace(_previousFrameElapsedTime);*/
 			
 			// update mouse coordinates
 			_lastMousePoint.x = _stage.mouseX;
@@ -190,8 +190,8 @@ package weave.core
 					// don't call the function if the relevantContext was disposed of.
 					if (!WeaveAPI.SessionManager.objectWasDisposed(args[0]))
 						(args[1] as Function).apply(null, args[2]);
-					if(isExecutionTimeHigher)
-						trace(stackTrace);
+					/*if(isExecutionTimeHigher)
+						trace(stackTrace);*/
 				}
 			}
 			
@@ -207,9 +207,9 @@ package weave.core
 					// if elapsed time reaches threshold, call everything else later
 					if (getTimer() - _currentFrameStartTime > maxComputationTimePerFrame)
 					{
-						trace(getTimer() - _currentFrameStartTime );
-						if(isExecutionTimeHigher)
-							trace(stackTrace);
+						//trace(getTimer() - _currentFrameStartTime );
+						/*if(isExecutionTimeHigher)
+							trace(stackTrace);*/
 						// To preserve the order they were added, put the remaining callLater
 						// functions for this frame in front of any others that may have been added.
 						var j:int = calls.length;
@@ -227,8 +227,8 @@ package weave.core
 						// if it takes a long time (> 1000 ms), something's wrong...
 						
 						(args[1] as Function).apply(null, args[2]);
-						if(isExecutionTimeHigher)
-							trace(stackTrace);
+						/*if(isExecutionTimeHigher)
+							trace(stackTrace);*/
 					}
 				}
 			}

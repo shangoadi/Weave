@@ -319,8 +319,7 @@ package weave.visualization.layers
 			//validate spatial index if necessary
 			if (shouldDraw)
 			{
-				DebugTimer.begin();
-				
+				DebugTimer.begin();				
 				validateSpatialIndex();
 				DebugTimer.end('validate index');
 			}
@@ -338,11 +337,11 @@ package weave.visualization.layers
 					
 					var keys:Array = getSelectedKeys() || []; // use empty Array if keys are null
 					
-					DebugTimer.begin();
+					//DebugTimer.begin();
 					
 					plotter.drawPlot(keys, _dataBounds, _screenBounds, _plotBitmap.bitmapData);
 					
-					DebugTimer.end('drawPlot');
+					//DebugTimer.end('drawPlot');
 				}
 			}
 			//trace(name,'end updateDisplayList', _dataBounds);
