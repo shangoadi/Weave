@@ -55,6 +55,7 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 			import mx.controls.Menu;
 			import mx.core.Application;
 			import mx.core.BitmapAsset;
+			import mx.core.FlexGlobals;
 			import mx.core.SpriteAsset;
 			import mx.events.CloseEvent;
 			import mx.events.DragEvent;
@@ -1164,7 +1165,7 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 				if (_controlPanel)
 				{
 					if (!_controlPanel.parent)
-						PopUpManager.addPopUp(_controlPanel, Application.application as Application);
+						PopUpManager.addPopUp(_controlPanel, FlexGlobals.topLevelApplication as Application);
 					_controlPanel.sendWindowToForeground();
 				}
 				else
@@ -1574,7 +1575,7 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 				if (!instance)
 					_instances[draggablePanelClass] = instance = new draggablePanelClass() as DraggablePanel;
 				if (!instance.parent)
-					PopUpManager.addPopUp(instance, Application.application as Application);
+					PopUpManager.addPopUp(instance, FlexGlobals.topLevelApplication as Application);
 				instance.restorePanel();
 				
 				return instance;

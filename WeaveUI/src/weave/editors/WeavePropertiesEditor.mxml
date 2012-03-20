@@ -50,6 +50,7 @@
 	
 	<mx:Script>
 		<![CDATA[
+			import mx.core.FlexGlobals;
 			import mx.core.Application;
 			import mx.managers.PopUpManager;
 			
@@ -76,7 +77,7 @@
 					_instance = new WeavePropertiesEditor();
 				
 				if (!_instance.parent)
-					PopUpManager.addPopUp(_instance, Application.application as Application);
+					PopUpManager.addPopUp(_instance, FlexGlobals.topLevelApplication as Application);
 				
 				_instance.restorePanel();
 			}

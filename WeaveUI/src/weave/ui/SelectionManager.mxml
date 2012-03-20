@@ -51,6 +51,7 @@
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.Application;
+			import mx.core.FlexGlobals;
 			import mx.events.CollectionEvent;
 			import mx.events.CollectionEventKind;
 			import mx.managers.PopUpManager;
@@ -121,7 +122,7 @@
 				{
 					clickFunction = function():void {
 						// create the SelectionManager as a modal PopUp
-						_popupManager = PopUpManager.createPopUp(Application.application as DisplayObject, SelectionManager, true) as SelectionManager;
+						_popupManager = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as DisplayObject, SelectionManager, true) as SelectionManager;
 						// this will disable dragging of this popup
 						_popupManager.isPopUp = false;
 						PopUpManager.centerPopUp(_popupManager);

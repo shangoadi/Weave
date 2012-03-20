@@ -23,6 +23,7 @@ package weave.utils
 	
 	import mx.controls.ToolTip;
 	import mx.core.Application;
+	import mx.core.FlexGlobals;
 	import mx.core.IToolTip;
 	import mx.managers.ToolTipManager;
 	import mx.utils.ObjectUtil;
@@ -183,7 +184,7 @@ package weave.utils
 			
 			if (bounds == null)
 			{
-				var stage:Stage = Application.application.stage;
+				var stage:Stage = FlexGlobals.topLevelApplication.stage;
 				tempBounds.setBounds(stage.x, stage.y, stage.stageWidth, stage.stageHeight);
 				bounds = tempBounds;
 			}

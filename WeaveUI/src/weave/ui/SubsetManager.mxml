@@ -58,6 +58,7 @@
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.Application;
+			import mx.core.FlexGlobals;
 			import mx.events.CollectionEvent;
 			import mx.events.CollectionEventKind;
 			import mx.managers.PopUpManager;
@@ -189,7 +190,7 @@
 					clickFunction = function():void
 					{
 						// when a user clicks this option we will create the SelectionManager as a popup 
-						_popupManager = PopUpManager.createPopUp(Application.application as DisplayObject, SubsetManager) as SubsetManager;
+						_popupManager = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as DisplayObject, SubsetManager) as SubsetManager;
 						
 						// this makes it so the popup is not draggable
 						//_popupManager.isPopUp = false;

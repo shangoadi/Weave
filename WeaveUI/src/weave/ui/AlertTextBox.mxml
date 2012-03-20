@@ -54,6 +54,7 @@
 	<![CDATA[
 		import mx.controls.Button;
 		import mx.core.Application;
+		import mx.core.FlexGlobals;
 		import mx.events.CloseEvent;
 		import mx.managers.PopUpManager;
 		import mx.printing.FlexPrintJob;
@@ -97,7 +98,7 @@
 		
 		public static function show(title:String, message:String, defaultInput:String = ""):AlertTextBox 
 		{
-			var newAlert:AlertTextBox = PopUpManager.createPopUp(Application.application as DisplayObject, AlertTextBox, true) as AlertTextBox;
+			var newAlert:AlertTextBox = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as DisplayObject, AlertTextBox, true) as AlertTextBox;
 			newAlert.title = title;
 			// disable moving of the popup
 			newAlert.isPopUp = false;

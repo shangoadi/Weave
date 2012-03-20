@@ -51,6 +51,7 @@
 		<mx:Script>
 			<![CDATA[
 				import mx.core.Application;
+				import mx.core.FlexGlobals;
 				import mx.managers.PopUpManager;
 				
 				import weave.Weave;
@@ -80,7 +81,7 @@
 				{
 					if (_staticInstance == null)
 						_staticInstance = new EditDataSourcePanel();
-					_staticInstance = PopUpManager.createPopUp(Application.application as DisplayObject, EditDataSourcePanel, false) as EditDataSourcePanel;
+					_staticInstance = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as DisplayObject, EditDataSourcePanel, false) as EditDataSourcePanel;
 					
 					PopUpManager.centerPopUp(_staticInstance);
 				}	

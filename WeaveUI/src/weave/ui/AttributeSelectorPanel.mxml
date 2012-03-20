@@ -52,6 +52,19 @@
 			import mx.collections.ListCollectionView;
 			import mx.controls.Label;
 			import mx.core.Application;
+			import mx.core.Container;
+			import mx.core.DragSource;
+			import mx.core.FlexGlobals;
+			import mx.core.IContainer;
+			import mx.core.IUIComponent;
+			import mx.core.UIComponent;
+			import mx.effects.easing.Circular;
+			import mx.events.DragEvent;
+			import mx.events.ItemClickEvent;
+			import mx.events.ListEvent;
+			import mx.graphics.Stroke;
+			import mx.managers.CursorManager;
+			import mx.managers.DragManager;
 			import mx.managers.PopUpManager;
 			
 			import weave.Weave;
@@ -239,7 +252,7 @@
 					return;
 				
 				if (!defaultSelector.parent)
-					PopUpManager.addPopUp(defaultSelector, Application.application as Application);
+					PopUpManager.addPopUp(defaultSelector, FlexGlobals.topLevelApplication as Application);
 
 				defaultSelector.editor.clearSearch();
 				

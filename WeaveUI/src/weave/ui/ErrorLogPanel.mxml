@@ -50,6 +50,7 @@
 	<mx:Script>
 		<![CDATA[
 			import mx.core.Application;
+			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
 			import mx.rpc.Fault;
 			
@@ -131,7 +132,7 @@
 					instance.panelX.value = "0%";
 					instance.panelWidth.value = "100%";
 					
-					PopUpManager.addPopUp(instance, Application.application as Application);
+					PopUpManager.addPopUp(instance, FlexGlobals.topLevelApplication as Application);
 				}
 				instance.restorePanel();
 			}

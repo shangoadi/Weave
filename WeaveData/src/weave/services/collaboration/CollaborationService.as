@@ -34,6 +34,7 @@ package weave.services.collaboration
 	import mx.containers.HBox;
 	import mx.controls.Alert;
 	import mx.core.Application;
+	import mx.core.FlexGlobals;
 	import mx.events.CloseEvent;
 	import mx.utils.Base64Decoder;
 	import mx.utils.Base64Encoder;
@@ -556,8 +557,8 @@ package weave.services.collaboration
 			dispatchEvent(new CollaborationEvent(CollaborationEvent.CONNECT));
 		}
 		
-		private function xMousePercent():Number { return Application.application.stage.mouseX / Application.application.stage.stageWidth;  }
-		private function yMousePercent():Number { return Application.application.stage.mouseY / Application.application.stage.stageHeight; }
+		private function xMousePercent():Number { return FlexGlobals.topLevelApplication.stage.mouseX / FlexGlobals.topLevelApplication.stage.stageWidth;  }
+		private function yMousePercent():Number { return FlexGlobals.topLevelApplication.stage.mouseY / FlexGlobals.topLevelApplication.stage.stageHeight; }
 
 		//Most servers have this enabled, where if you don't do anything for too long
 		//it'll fire the timeout event

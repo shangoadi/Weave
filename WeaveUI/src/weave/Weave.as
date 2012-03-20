@@ -27,6 +27,7 @@ package weave
 	import flash.utils.getQualifiedClassName;
 	
 	import mx.core.Application;
+	import mx.core.FlexGlobals;
 	import mx.core.UIComponent;
 	import mx.graphics.codec.PNGEncoder;
 	import mx.rpc.events.FaultEvent;
@@ -376,7 +377,7 @@ package weave
 		public static function createWeaveFileContent():ByteArray
 		{
 			// screenshot thumbnail
-			var _thumbnail:BitmapData = BitmapUtils.getBitmapDataFromComponent(Application.application as UIComponent, THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+			var _thumbnail:BitmapData = BitmapUtils.getBitmapDataFromComponent(FlexGlobals.topLevelApplication as UIComponent, THUMBNAIL_SIZE, THUMBNAIL_SIZE);
 			// session history
 			var _history:Object = history.getSessionState();
 			// thumbnail should go first in the stream because we will often just want to extract the thumbnail and nothing else.

@@ -85,7 +85,7 @@ A text editor to change the Session State on the fly.
 			import mx.controls.Alert;
 			import mx.controls.dataGridClasses.DataGridColumn;
 			import mx.core.Application;
-			import mx.core.IInvalidating;
+			import mx.core.FlexGlobals;
 			import mx.core.mx_internal;
 			import mx.events.CloseEvent;
 			import mx.events.DataGridEvent;
@@ -781,7 +781,7 @@ A text editor to change the Session State on the fly.
 			{
 				var defaultEditor:SessionStateEditor = getInstance();
 				if (!defaultEditor.parent)
-					PopUpManager.addPopUp(defaultEditor, Application.application as Application);
+					PopUpManager.addPopUp(defaultEditor, FlexGlobals.topLevelApplication as Application);
 				
 				if (rootObject == null)
 					rootObject = Weave.root;

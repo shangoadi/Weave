@@ -45,6 +45,7 @@
 		<![CDATA[
 			import mx.controls.Alert;
 			import mx.core.Application;
+			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
 			
 			import weave.Weave;
@@ -139,7 +140,7 @@
 			
 			public static function openInstance(plotter:CirclePlotter,circleName:String):void
 			{
-				var settingsPanel:CirclePlotterSettings = PopUpManager.createPopUp(Application.application as Application, CirclePlotterSettings) as CirclePlotterSettings;
+				var settingsPanel:CirclePlotterSettings = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as Application, CirclePlotterSettings) as CirclePlotterSettings;
 				PopUpManager.centerPopUp(settingsPanel);
 				
 				settingsPanel.plotter = plotter;

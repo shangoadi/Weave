@@ -41,6 +41,7 @@
 		<![CDATA[
 			import mx.controls.Alert;
 			import mx.core.Application;
+			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
 			
 			import weave.Weave;
@@ -141,7 +142,7 @@
 			
 			public static function openInstance(plotter:SingleImagePlotter,markerName:String):void
 			{
-				var settingsPanel:MarkerSettingsComponent = PopUpManager.createPopUp(Application.application as Application,MarkerSettingsComponent) as MarkerSettingsComponent;
+				var settingsPanel:MarkerSettingsComponent = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as Application,MarkerSettingsComponent) as MarkerSettingsComponent;
 				PopUpManager.bringToFront(settingsPanel);
 				
 				settingsPanel.plotter = plotter;
