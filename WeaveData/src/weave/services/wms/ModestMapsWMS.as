@@ -1,20 +1,20 @@
 /*
-    Weave (Web-based Analysis and Visualization Environment)
-    Copyright (C) 2008-2011 University of Massachusetts Lowell
+Weave (Web-based Analysis and Visualization Environment)
+Copyright (C) 2008-2011 University of Massachusetts Lowell
 
-    This file is a part of Weave.
+This file is a part of Weave.
 
-    Weave is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License, Version 3,
-    as published by the Free Software Foundation.
+Weave is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License, Version 3,
+as published by the Free Software Foundation.
 
-    Weave is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+Weave is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with Weave.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
@@ -51,7 +51,7 @@ package weave.services.wms
 	import weave.api.services.IWMSService;
 	import weave.core.ErrorManager;
 	import weave.primitives.Bounds2D;
-
+	
 	/**
 	 * This class is a wrapper around the ModestMaps library for both Microsoft and Yahoo
 	 * WMS providers.
@@ -63,7 +63,7 @@ package weave.services.wms
 		public function ModestMapsWMS()
 		{
 			_srs = IMAGE_PROJECTION_SRS; 
-
+			
 			_tempBounds.copyFrom(_worldBoundsMercator);
 			setReprojectedBounds(_tempBounds, _worldBoundsMercator, _tileProjectionSRS, _srs); // get world bounds in our Mercator
 		}
@@ -75,19 +75,25 @@ package weave.services.wms
 				// we cannot use Microsoft services, but we can keep the code 
 				
 				/*case 'Microsoft Aerial':
-					_mapProvider = new MicrosoftAerialMapProvider();
-					break;
+				_mapProvider = new MicrosoftAerialMapProvider();
+				break;
 				case 'Microsoft Hybrid':
-					_mapProvider = new MicrosoftHybridMapProvider();
-					break;
+				_mapProvider = new MicrosoftHybridMapProvider();
+				break;
 				case 'Microsoft RoadMap':
-					_mapProvider = new MicrosoftRoadMapProvider();
-					break;*/
+				_mapProvider = new MicrosoftRoadMapProvider();
+				break;*/
 				case WMSProviders.BLUE_MARBLE_MAP:
 					_mapProvider = new BlueMarbleMapProvider();
 					break;
 				case WMSProviders.OPEN_STREET_MAP:
 					_mapProvider = new OpenStreetMapProvider();
+					break;
+				case WMSProviders.CRI_MM_3857:
+					_mapProvider = new MichiganStreetsProvider(MichiganStreetsProvider.IMAGE_PROJECTION_SRS_3857);
+					break;
+				case WMSProviders.CRI_MM_4326:
+					_mapProvider = new MichiganStreetsProvider(MichiganStreetsProvider.IMAGE_PROJECTION_SRS_4326);
 					break;
 				case WMSProviders.MAPQUEST:
 					_mapProvider = new OpenMapQuestProvider();
@@ -137,7 +143,7 @@ package weave.services.wms
 		private const _tempBounds2:Bounds2D = new Bounds2D(); 
 		private const _tempBounds3:Bounds2D = new Bounds2D();
 		private const _tempBounds4:Bounds2D = new Bounds2D();
-
+		
 		override public function requestImages(dataBounds:IBounds2D, screenBounds:IBounds2D, lowerQuality:Boolean = false):Array
 		{
 			if(_currentTileIndex == null || _mapProvider == null)
@@ -165,7 +171,7 @@ package weave.services.wms
 			copyDataBounds.copyFrom(dataBounds);
 			_worldBoundsMercator.constrainBounds(copyDataBounds, false);
 			setReprojectedBounds(copyDataBounds, latLonCopyDataBounds, _srs, _tileProjectionSRS);
-						
+			
 			var latLonViewingDataBounds:Bounds2D = latLonCopyDataBounds;
 			var tileXYBounds:Bounds2D = _tempBounds2;
 			// calculate min and max tile x and y for the zoom level
@@ -175,7 +181,7 @@ package weave.services.wms
 			var yTileMin:Number = tileXYBounds.yMin;
 			var xTileMax:Number = tileXYBounds.xMax;
 			var yTileMax:Number = tileXYBounds.yMax;
-
+			
 			var mercatorTileXYBounds:Bounds2D = _tempBounds2;
 			var latLonTileXYBounds:Bounds2D = _tempBounds3;
 			tileXYToDataBounds(tileXYBounds, latLonTileXYBounds, zoomScale);
@@ -221,7 +227,7 @@ package weave.services.wms
 					downloadImage(newTile);
 				}
 			}
-
+			
 			lowerQualTiles = lowerQualTiles.concat(completedTiles);
 			lowerQualTiles = lowerQualTiles.sort(tileSortingComparison);
 			return lowerQualTiles;
@@ -296,6 +302,8 @@ package weave.services.wms
 				maxZoom = 20;
 			else if (_mapProvider is OpenMapQuestProvider)
 				maxZoom = 15;
+			else if (_mapProvider is MichiganStreetsProvider)
+				maxZoom = 15;
 			else if (_mapProvider is OpenMapQuestAerialProvider)
 				maxZoom = 7;
 			
@@ -369,18 +377,18 @@ package weave.services.wms
 		{
 			destBounds.xMin = 360 * (sourceBounds.xMin / zoomScale) - 180.0;
 			destBounds.xMax = 360 * (sourceBounds.xMax / zoomScale) - 180.0;
-
+			
 			var latRadians:Number = Math.atan(ProjConstants.sinh(Math.PI * (1 - 2 * sourceBounds.yMin / zoomScale)));
 			destBounds.yMin = latRadians * 180.0 / Math.PI;
 			latRadians = Math.atan(ProjConstants.sinh(Math.PI * (1 - 2 * sourceBounds.yMax / zoomScale)));
 			destBounds.yMax = latRadians * 180.0 / Math.PI;
 			
 			destBounds.makeSizePositive();
-
+			
 			return destBounds;
 		}
 		
-
+		
 		/**
 		 * This function will download the image data for a tile.
 		 * 	
@@ -390,7 +398,7 @@ package weave.services.wms
 		{
 			tile.downloadImage(handleImageDownload, handleImageDownloadFault, tile);
 		}
-
+		
 		/**
 		 * This function is called when an image is done downloading. The image is then cached and saved.
 		 * 
@@ -400,7 +408,7 @@ package weave.services.wms
 		private function handleImageDownload(event:ResultEvent, token:Object = null):void
 		{
 			var tile:WMSTile = token as WMSTile;
-
+			
 			tile.bitmapData = (event.result as Bitmap).bitmapData;
 			handleTileDownload(tile);
 		}
@@ -462,6 +470,8 @@ package weave.services.wms
 				return 'Tiles Courtesy of MapQuest and (c) OpenStreetMap contributors, CC-BY-SA';
 			else if (_mapProvider is OpenMapQuestAerialProvider)
 				return 'Portions Courtesy NASA/JPL-Caltech and U.S. Depart. of Agriculture, Farm Service Agency';
+			else if (_mapProvider is MichiganStreetsProvider)
+				return 'Michigan Highways';
 			
 			return '';
 		}
