@@ -26,11 +26,12 @@ package weave.ui
 	import flash.geom.Point;
 	
 	import mx.controls.Menu;
-	import mx.core.Application;
+	import mx.core.FlexGlobals;
 	import mx.core.UIComponent;
 	import mx.events.MenuEvent;
 	
 	import weave.primitives.Bounds2D;
+
 	/**
 	 * 
 	 * This class adds a submenu to any UI Compnent.
@@ -108,7 +109,7 @@ package weave.ui
 			
 			var menuLocation:Point = _uiParent.contentToGlobal(new Point(0,_uiParent.height));
 			
-			var stage:Stage = Application.application.stage;
+			var stage:Stage = FlexGlobals.topLevelApplication.stage;
 			var tempBounds:Bounds2D = new Bounds2D();
 			tempBounds.setBounds(stage.x, stage.y, stage.stageWidth, stage.stageHeight);
 			

@@ -25,6 +25,7 @@
 -->
 <mx:ViewStack 
 	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:s="library://ns.adobe.com/flex/spark"
 	xmlns="weave.ui.admin.*"
 	creationPolicy="all"
 	paddingBottom="8" paddingLeft="8" paddingRight="8" paddingTop="8"
@@ -33,7 +34,11 @@
 	<mx:Script>
 		<![CDATA[
 			import mx.managers.PopUpManager;
+			/*
+			xmlns:mx="library://ns.adobe.com/flex/mx"
+			xmlns:fx="http://ns.adobe.com/mxml/2009"
 			
+			*/
 			[Event(name="close", type="mx.events.CloseEvent")]
 			
 			/**

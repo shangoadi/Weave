@@ -122,7 +122,7 @@
 				var instance:ErrorLogPanel = getInstance();
 				if (!instance.parent)
 				{
-					var app:Application = Application.application as Application;
+					var app:Application = FlexGlobals.topLevelApplication as Application;
 					var desiredHeight:Number = 150;
 					var percentHeight:Number = Math.round(desiredHeight / app.stage.stageHeight * 100);
 					
