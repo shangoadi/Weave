@@ -76,7 +76,7 @@ public class RService extends GenericServlet
 			}
 			catch (RServiceUsingJRI.JRIConnectionException e)
 			{
-				System.out.println(e.getStackTrace());
+				e.printStackTrace();
 				// remember exception associated with chosen service
 				// alternate for next time
 				if (type == serviceType)
@@ -86,7 +86,7 @@ public class RService extends GenericServlet
 			}
 			catch (RServiceUsingRserve.RserveConnectionException e)
 			{
-				System.out.println(e.getStackTrace());
+				e.printStackTrace();
 				// remember exception associated with chosen service
 				// alternate for next time
 				if (type == serviceType)
