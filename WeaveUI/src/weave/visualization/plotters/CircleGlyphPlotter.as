@@ -19,7 +19,6 @@
 
 package weave.visualization.plotters
 {
-	import flash.display.CapsStyle;
 	import flash.display.Graphics;
 	import flash.display.Shape;
 	import flash.geom.Point;
@@ -31,7 +30,6 @@ package weave.visualization.plotters
 	import weave.api.registerLinkableChild;
 	import weave.core.LinkableBoolean;
 	import weave.core.LinkableNumber;
-	import weave.data.AttributeColumns.ColorColumn;
 	import weave.data.AttributeColumns.DynamicColumn;
 	import weave.utils.ColumnUtils;
 	import weave.visualization.plotters.styles.DynamicFillStyle;
@@ -55,12 +53,12 @@ package weave.visualization.plotters
 			// initialize default line & fill styles
 			lineStyle.requestLocalObject(SolidLineStyle, false);
 			var fill:SolidFillStyle = fillStyle.requestLocalObject(SolidFillStyle, false);
-			fill.color.internalDynamicColumn.requestGlobalObject(Weave.DEFAULT_COLOR_COLUMN, ColorColumn, false);
+			fill.color.internalDynamicColumn.globalName = Weave.DEFAULT_COLOR_COLUMN;
 		}
 
-		public const minScreenRadius:LinkableNumber = registerLinkableChild(this, new LinkableNumber(3));
-		public const maxScreenRadius:LinkableNumber = registerLinkableChild(this, new LinkableNumber(12));
-		public const defaultScreenRadius:LinkableNumber = registerLinkableChild(this, new LinkableNumber(5));
+		public const minScreenRadius:LinkableNumber = registerLinkableChild(this, new LinkableNumber(3, isFinite));
+		public const maxScreenRadius:LinkableNumber = registerLinkableChild(this, new LinkableNumber(12, isFinite));
+		public const defaultScreenRadius:LinkableNumber = registerLinkableChild(this, new LinkableNumber(5, isFinite));
 		public const enabledSizeBy:LinkableBoolean = registerLinkableChild(this, new LinkableBoolean(false));
 		
 		/**
@@ -86,8 +84,8 @@ package weave.visualization.plotters
 			// project data coordinates to screen coordinates and draw graphics			
 			var radius:Number = ColumnUtils.getNorm(screenRadius, recordKey);
 			
-			tempPoint.x = dataX.getValueFromKey(recordKey, Number);			
-			tempPoint.y = dataY.getValueFromKey(recordKey, Number);
+			tempPoint.x = getCoordFromRecordKey(recordKey, true);
+			tempPoint.y = getCoordFromRecordKey(recordKey, false);
 			
 			dataBounds.projectPointTo(tempPoint, screenBounds);
 			
@@ -96,7 +94,7 @@ package weave.visualization.plotters
 			if (enabledSizeBy.value == true)			
 			{				
 				radius = minScreenRadius.value + (radius *(maxScreenRadius.value - minScreenRadius.value));
-			}				
+			}
 			else				
 			{				
 				radius = defaultScreenRadius.value;				

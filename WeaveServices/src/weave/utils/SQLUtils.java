@@ -37,12 +37,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Vector;
-import java.util.Map;
-import java.util.Iterator;
-import java.util.Map.Entry;
 
 import org.postgresql.PGConnection;
 
@@ -191,7 +191,7 @@ public class SQLUtils
 	}
 
 	/**
-	 * This function tests if a given Connection is valid.
+	 * This function tests if a given Connection is valid, and closes the connection if it is not.
 	 * @param conn A Connection object which may or may not be valid.
 	 * @return A value of true if the given Connection is still connected.
 	 */
@@ -887,6 +887,8 @@ public class SQLUtils
 		try
 		{
 			DatabaseMetaData md = conn.getMetaData();
+
+			tableName = escapeSearchString(conn, tableName);
 			
 			// MySQL uses "catalogs" instead of "schemas"
 			if (conn.getMetaData().getDatabaseProductName().equalsIgnoreCase(MYSQL))
@@ -1332,30 +1334,25 @@ public class SQLUtils
 	}
 
 	/**
-	 * @TODO Stop using this function. It isn't safe.  Use '?' placeholders in queries instead.
+	 * This will escape special characters in a SQL search string.
+	 * @param conn A SQL Connection.
+	 * @param searchString A SQL search string containing special characters to be escaped.
+	 * @return The searchString with special characters escaped.
+	 * @throws SQLException 
 	 */
-	public static String quoteString(Connection conn, String string)
+	public static String escapeSearchString(Connection conn, String searchString) throws SQLException
 	{
-		try 
+		String escape = conn.getMetaData().getSearchStringEscape();
+		StringBuilder sb = new StringBuilder();
+		int n = searchString.length();
+		for (int i = 0; i < n; i++)
 		{
-			return quoteString(conn.getMetaData().getDatabaseProductName(), string);
-		} 
-		catch (SQLException e) 
-		{
-			// this should never happen
-			throw new RuntimeException(e);
+			char c = searchString.charAt(i);
+			if (c == '.' || c == '%' || c == '_' || c == '"' || c == '\'' || c == '`')
+				sb.append(escape);
+			sb.append(c);
 		}
-	}
-	
-	/**
-	 * @TODO Stop using this function. It isn't safe.  Use '?' placeholders in queries instead.
-	 */
-	public static String quoteString(String dbms, String string)
-	{
-		String quote = "'";
-		
-		// make sure to escape matching quotes in the actual string
-		return quote + string.replace("\\","\\\\").replace(quote, "\\" + quote) + quote;
+		return sb.toString();
 	}
 	
 	/**
@@ -1472,27 +1469,41 @@ public class SQLUtils
 				if (prevAutoCommit)
 					conn.setAutoCommit(false);
 				
-				stmt = conn.createStatement();
-				
 				String csvData = org.apache.commons.io.FileUtils.readFileToString(new File(formatted_CSV_path));
 				String[][] rows = CSVParser.defaultParser.parseCSV(csvData);
-				String query = "";
-				for (int i = 1; i < rows.length; i++) //Skip header line
+				String query = "", tempQuery = "INSERT INTO %s values (";
+				for (int column = 0; column < rows[0].length; column++) // Use header row to determine the number of columns
 				{
-					query = "insert into " + quotedTable + " values " + "(";
-					for (int j = 0; j < rows[i].length; j++)
-					{
-						if (j > 0)
-							query += ",";
-						query += SQLUtils.quoteString(conn, rows[i][j]);
-					}
-					query += ")";
-					stmt.executeUpdate(query);
+					if (column == rows[0].length - 1)
+						tempQuery = tempQuery + "?)";
+					else
+						tempQuery = tempQuery + "?,";
 				}
-				stmt.close();
 				
-				if (prevAutoCommit)
-					conn.setAutoCommit(true);
+				query = String.format(tempQuery, quotedTable);
+				
+				CallableStatement cstmt = null;
+				try
+				{
+					cstmt = conn.prepareCall(query);;
+
+					for (int row = 1; row < rows.length; row++) //Skip header line
+					{
+						for (int column = 0; column < rows[row].length; column++)
+						{
+							cstmt.setString(column+1, rows[row][column]);
+						}
+						cstmt.execute();
+					}
+				}
+				catch (SQLException e)
+				{
+					throw new RemoteException(e.getMessage(), e);
+				}
+				finally
+				{
+					SQLUtils.cleanup(cstmt);
+				}
 			}
 			else if (dbms.equalsIgnoreCase(SQLUtils.POSTGRESQL))
 			{
@@ -1506,9 +1517,9 @@ public class SQLUtils
 
 				// sql server expects the actual EOL character '\n', and not the textual representation '\\n'
 				stmt.executeUpdate(String.format(
-						"BULK INSERT %s FROM '%s' WITH ( FIRSTROW = 2, FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', KEEPNULLS )", 
-						quotedTable, formatted_CSV_path
-						));
+						"BULK INSERT %s FROM '%s' WITH ( FIRSTROW = 2, FIELDTERMINATOR = '%s', ROWTERMINATOR = '\n', KEEPNULLS )",
+						quotedTable, formatted_CSV_path, SQL_SERVER_DELIMETER
+					));
 			}
 		}
 		finally 
@@ -1530,7 +1541,7 @@ public class SQLUtils
 		return "SERIAL PRIMARY KEY";
 	}
 
-	public static String getCSVNullValue(Connection conn)
+	private static String getCSVNullValue(Connection conn)
 	{
 		try
 		{
@@ -1548,5 +1559,35 @@ public class SQLUtils
 			// this should never happen
 			throw new RuntimeException(e);
 		}
+	}
+	
+	private static final char SQL_SERVER_DELIMETER = (char)8;
+	
+	public static String generateCSV(Connection conn, String[][] csvData) throws SQLException
+	{
+		String outputNullValue = SQLUtils.getCSVNullValue(conn);
+		for (int i = 0; i < csvData.length; i++)
+		{
+			for (int j = 0; j < csvData[i].length; j++)
+			{
+				if (csvData[i][j] == null)
+					csvData[i][j] = outputNullValue;
+			}
+		}
+		
+		String dbms = conn.getMetaData().getDatabaseProductName();
+		if (SQLSERVER.equalsIgnoreCase(dbms))
+		{
+			// special case for Microsoft SQL Server because it does not support quotes.
+			CSVParser parser = new CSVParser(SQL_SERVER_DELIMETER);
+			return parser.createCSV(csvData, false);
+		}
+		else
+		{
+			boolean quoteEmptyStrings = outputNullValue.length() > 0;
+			return CSVParser.defaultParser.createCSV(csvData, quoteEmptyStrings);
+		}
+		
+		
 	}
 }

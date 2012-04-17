@@ -43,7 +43,8 @@ package weave.core
 		 * encoding types
 		 */
 		public static const XML_ENCODING:String = "xml";
-		//public static const CSV_ENCODING:String = "csv";
+		public static const CSV_ENCODING:String = "csv";
+		public static const CSVROW_ENCODING:String = "csv-row";
 		public static const DYNAMIC_ENCODING:String = "dynamic";
 		
 		/**
@@ -112,24 +113,45 @@ package weave.core
 			if (obj is Array)
 			{
 				var array:Array = obj as Array;
+				var encoding:String = DYNAMIC_ENCODING;
+				
+				// if there is a nested Array or String item in the Array, encode as CSV or CSVROW
+				for each (var item:* in array)
+				{
+					if (item is Array)
+					{
+						encoding = CSV_ENCODING;
+						break;
+					}
+					if (item is String)
+					{
+						array = [array];
+						encoding = CSVROW_ENCODING;
+						break;
+					}
+				}
+				
 				var arrayNode:XMLNode = new XMLNode(XMLNodeType.ELEMENT_NODE, qname.localName);
-				arrayNode.attributes["encoding"] = DYNAMIC_ENCODING;
-				for (var i:int = 0; i < array.length; i++)
-					encodeValue(array[i], null, arrayNode);
+				arrayNode.attributes["encoding"] = encoding;
+				
+				if (encoding != DYNAMIC_ENCODING) // CSV or CSVROW
+				{
+					var csvString:String = WeaveAPI.CSVParser.createCSV(array);
+					var textNode:XMLNode = new XMLNode(XMLNodeType.TEXT_NODE, csvString);
+					arrayNode.appendChild(textNode);
+				}
+				else
+				{
+					for (var i:int = 0; i < array.length; i++)
+						encodeValue(array[i], null, arrayNode);
+				}
 				parentNode.appendChild(arrayNode);
 				return arrayNode;
 			}
-			/* if (obj is CSV || obj is CSVRow)
-			{
-				var childNode:XMLNode = super.encodeValue(obj.toString(), qname, parentNode);
-				return setAttributeAndReplaceNode(childNode, "encoding", CSV_ENCODING);
-			} */
 			try
 			{
-				var str:String = obj as String;
-				// if the string looks like it may be XML, attempt to parse it as XML
-				if (str && str.charAt(0) == '<' && str.charAt(str.length - 1) == '>')
-					obj = XML(str);
+				if (obj.hasOwnProperty(LinkableXML.XML_STRING))
+					obj = XML(obj[LinkableXML.XML_STRING]);
 			}
 			catch (e:Error)
 			{
@@ -151,6 +173,9 @@ package weave.core
 				parentNode.appendChild(nullNode);
 				return nullNode;
 			}
+			// avoid SimpleXMLEncoder's "INF" representation of Infinity
+			if (obj === Number.POSITIVE_INFINITY || obj === Number.NEGATIVE_INFINITY)
+				obj = obj.toString();
 			
 			return super.encodeValue(obj, qname, parentNode);
 		}

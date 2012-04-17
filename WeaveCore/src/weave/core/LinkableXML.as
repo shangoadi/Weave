@@ -19,10 +19,6 @@
 
 package weave.core
 {
-	import mx.utils.ObjectUtil;
-	
-	import weave.api.reportError;
-	
 	/**
 	 * LinkableBoolean, LinkableString and LinkableNumber contain simple, immutable data types.  LinkableXML
 	 * is an exception because it contains an XML object that can be manipulated.  Changes to the internal
@@ -38,15 +34,6 @@ package weave.core
 		public function LinkableXML(allowNull:Boolean = true)
 		{
 			super(String, allowNull ? null : notNull);
-
-//			if (defaultValue != null)
-//			{
-//				delayCallbacks();
-//				value = defaultValue;
-//				// Resume callbacks one frame later when we know it is possible for
-//				// other classes to have a pointer to this object and retrieve the value.
-//				StageUtils.callLater(this, resumeCallbacks, null, false);
-//			}
 		}
 		
 		private function notNull(value:Object):Boolean
@@ -94,6 +81,23 @@ package weave.core
 			var str:String = value ? value.toXMLString() : null;
 			setSessionState(str);
 		}
+		
+		override public function setSessionState(value:Object):void
+		{
+			if (value && value.hasOwnProperty(XML_STRING))
+				value = value[XML_STRING];
+			super.setSessionState(value);
+		}
+		
+		override public function getSessionState():Object
+		{
+			// return an XMLString wrapper object for use with WeaveXMLEncoder.
+			var result:Object = {};
+			result[XML_STRING] = _sessionState;
+			return result;
+		}
+		
+		public static const XML_STRING:String = "XMLString";
 
 		/**
 		 * This is used to store an XML value, which is separate from the actual session state String.

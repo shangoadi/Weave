@@ -19,7 +19,6 @@
 
 package weave.core
 {
-	import flash.debugger.enterDebugger;
 	import flash.utils.Dictionary;
 	import flash.utils.getQualifiedClassName;
 	
@@ -31,7 +30,6 @@ package weave.core
 	import weave.api.disposeObjects;
 	import weave.api.newLinkableChild;
 	import weave.api.registerLinkableChild;
-	import weave.api.reportError;
 	
 	use namespace weave_internal;
 	
@@ -140,7 +138,7 @@ package weave.core
 			// append each name in newOrder to the end of _orderedNames
 			for (i = 0; i < newOrder.length; i++)
 			{
-				name = newOrder[i];
+				name = newOrder[i] as String;
 				// ignore bogus names and append each name only once.
 				if (_nameToObjectMap[name] == undefined || haveSeen[name] != undefined)
 					continue;
@@ -178,13 +176,9 @@ package weave.core
 		 */
 		public function requestObject(name:String, classDef:Class, lockObject:Boolean):*
 		{
-			if (classDef == null)
-			{
-				if (lockObject)
-					this.lockObject(name);
-				return getObject(name);
-			}
-			return initObjectByClassName(name, getQualifiedClassName(classDef), lockObject) as classDef;
+			var className:String = classDef ? getQualifiedClassName(classDef) : null;
+			var result:* = initObjectByClassName(name, className, lockObject);
+			return classDef ? result as classDef : null;
 		}
 		
 		/**
@@ -260,8 +254,8 @@ package weave.core
 				if ( ClassUtils.classImplements(className, SessionManager.ILinkableObjectQualifiedClassName)
 					&& (_typeRestriction == null || ClassUtils.classIs(className, _typeRestrictionClassName)) )
 				{
-					try
-					{
+//					try
+//					{
 						// If this name is not associated with an object of the specified type,
 						// associate the name with a new object of the specified type.
 						var classDef:Class = ClassUtils.getClassDefinition(className) as Class;
@@ -269,12 +263,12 @@ package weave.core
 							createAndSaveNewObject(name, classDef);
 						if (lockObject)
 							this.lockObject(name);
-					}
-					catch (e:Error)
-					{
-						reportError(e);
-						enterDebugger();
-					}
+//					}
+//					catch (e:Error)
+//					{
+//						reportError(e);
+//						enterDebugger();
+//					}
 				}
 				else
 				{

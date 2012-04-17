@@ -27,6 +27,29 @@
 	implements="weave.api.ui.ILinkableObjectEditor"
 	creationPolicy="all"
 	>
+	<mx:Label id="editorTitle" fontWeight="bold" text="{_dbfDataSource ? 'Edit' : 'Add'} DBF Data Source"/>
+	<mx:HBox>
+		<mx:Label text="Source Name *" width="120"/>
+		<mx:TextInput id="sourceName" change="keyType.text=sourceName.text" width="200" cornerRadius="5" borderStyle="solid"/><!--rounded corners don't work if borderstyle is not mentioned-->
+	</mx:HBox>
+	<mx:HBox>
+		<mx:Label text="DBF Source URL *" width="120"/>
+		<mx:TextInput id="dbfURL" width="300" cornerRadius="5" borderStyle="solid" toolTip="enter the url of your DBF Source file e.g. : http://www.example.com/st99_d00.dbf"/>
+	</mx:HBox>
+	<mx:HBox>
+		<mx:Label text="Shape Source URL" width="120"/>
+		<mx:TextInput id="shpURL" width="300" cornerRadius="5" borderStyle="solid" toolTip="enter the url of your CSV Source file e.g. : http://www.example.com/st99_d00.shp"/>
+	</mx:HBox>
+	<mx:HBox>
+		<mx:Label text="Key Column" width="120"/>
+		<mx:TextInput id="keyColumnName" width="200" cornerRadius="5" borderStyle="solid" toolTip="enter the column name that uniquely identifies each row in the data set"/>
+	</mx:HBox>
+	<mx:HBox>
+		<mx:Label text="Key Type *" width="120"/>
+		<mx:TextInput id="keyType" width="200" cornerRadius="5" borderStyle="solid" toolTip="enter key type like US State Fips Code,etc. "/>
+	</mx:HBox>
+	<mx:Spacer height="20"/>
+	<mx:Label text="* = required"/>
 	<mx:Script>
 		<![CDATA[
 			import mx.controls.Alert;
@@ -36,20 +59,26 @@
 			import weave.data.DataSources.DBFDataSource;
 			import weave.utils.EditorManager;
 			
-			[Bindable]
-			private var uniqueName:String = Weave.root.generateUniqueName("DBFDataSource");
+			override protected function createChildren():void
+			{
+				super.createChildren();
+				
+				keyType.text = sourceName.text = Weave.root.generateUniqueName("DBFDataSource");
+			}
 			
-			private var _dbfDataSource:DBFDataSource = null;
+			[Bindable] private var _dbfDataSource:DBFDataSource = null;
 			public function setTarget(object:ILinkableObject):void
 			{
-				_dbfDataSource = object as DBFDataSource;
-				
-				var checkObj:String  = Weave.root.getName(_dbfDataSource);
-				if(checkObj !=null)
+				if (!parent)
 				{
-					initialize();
-					editorTitle.text = "Edit";
-					uniqueName = Weave.root.getName(_dbfDataSource);
+					callLater(setTarget, arguments);
+					return;
+				}
+				
+				_dbfDataSource = object as DBFDataSource;
+				if (_dbfDataSource)
+				{
+					sourceName.text = Weave.root.getName(_dbfDataSource);
 					dbfURL.text = _dbfDataSource.dbfUrl.value;
 					shpURL.text = _dbfDataSource.shpUrl.value;
 					keyColumnName.text = _dbfDataSource.keyColName.value;
@@ -61,41 +90,20 @@
 			}
 			public function applyChanges():void
 			{
-				try{
+				try
+				{
 					_dbfDataSource.dbfUrl.value = dbfURL.text;
 					_dbfDataSource.shpUrl.value = shpURL.text;
 					_dbfDataSource.keyColName.value = keyColumnName.text;
 					_dbfDataSource.keyType.value = keyType.text;
 					Alert.show("Changes saved.")
 				}
-				catch(e:Error){
+				catch (e:Error)
+				{
 					Alert.show("Changes could not be saved. " + e.message,"Error");
 				}
 			}
 			
 		]]>
 	</mx:Script>
-	<mx:Label id="editorTitle" fontWeight="bold" text="Add DBF Data Source"/>
-	<mx:HBox>
-		<mx:Label text="Source Name *" width="120"/>
-		<mx:TextInput id="sourceName" change="keyType.text=sourceName.text" text="{uniqueName}" width="200" cornerRadius="5" borderStyle="solid"/><!--rounded corners don't work if borderstyle is not mentioned-->
-	</mx:HBox>
-	<mx:HBox>
-		<mx:Label text="DBF Source URL *" width="120"/>
-		<mx:TextInput id="dbfURL" width="300" cornerRadius="5" borderStyle="solid" toolTip="enter the url of your DBF Source file e.g. : http://vis.weave.com/st99_d00.dbf"/>
-	</mx:HBox>
-	<mx:HBox>
-		<mx:Label text="Shape Source URL" width="120"/>
-		<mx:TextInput id="shpURL" width="300" cornerRadius="5" borderStyle="solid" toolTip="enter the url of your CSV Source file e.g. : http://vis.weave.com/st99_d00.shp"/>
-	</mx:HBox>
-	<mx:HBox>
-		<mx:Label text="Key Column" width="120"/>
-		<mx:TextInput id="keyColumnName" width="200" cornerRadius="5" borderStyle="solid" toolTip="enter the column name that uniquely identifies each row in the data set"/>
-	</mx:HBox>
-	<mx:HBox>
-		<mx:Label text="Key Type *" width="120"/>
-		<mx:TextInput id="keyType" width="200" text="{uniqueName}" cornerRadius="5" borderStyle="solid" toolTip="enter key type like US State Fips Code,etc. "/>
-	</mx:HBox>
-	<mx:Spacer height="20"/>
-	<mx:Label text="*required"/>
 </mx:VBox>

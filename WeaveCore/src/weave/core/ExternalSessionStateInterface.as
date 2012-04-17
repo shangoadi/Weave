@@ -20,7 +20,6 @@
 package weave.core
 {
 	import flash.external.ExternalInterface;
-	import flash.utils.getDefinitionByName;
 	import flash.utils.getQualifiedClassName;
 	
 	import weave.api.WeaveAPI;
@@ -31,7 +30,7 @@ package weave.core
 	import weave.api.getCallbackCollection;
 	import weave.api.reportError;
 	import weave.compiler.Compiler;
-	import weave.compiler.ICompiledObject;
+	import weave.utils.DebugUtils;
 
 	use namespace weave_internal;
 	
@@ -47,20 +46,7 @@ package weave.core
 	 */
 	public class ExternalSessionStateInterface implements IExternalSessionStateInterface
 	{
-		/**
-		 * This function sets the root object that will be used by the other functions in this class.
-		 * This function must be called before the JavaScript API can be used.
-		 * @param root The root ILinkableObject to be used by the external interface functions.
-		 */
-		public function setLinkableObjectRoot(root:ILinkableObject):void
-		{
-			_rootObject = root;
-		}
-		
-		/**
-		 * @private
-		 */
-		private var _rootObject:ILinkableObject = null;
+		private var _rootObject:ILinkableObject = WeaveAPI.globalHashMap;
 		
 		/**
 		 * This function returns a pointer to an object appearing in the session state.
@@ -131,9 +117,16 @@ package weave.core
 				{
 					var value:Object = state[name];
 					if (value is XML)
+					{
 						state[name] = (value as XML).toXMLString();
-					else
-						convertSessionStateToPrimitives(value);
+					}
+					else if (value != null)
+					{
+						if (value.hasOwnProperty(LinkableXML.XML_STRING))
+							state[name] = value[LinkableXML.XML_STRING];
+						else
+							convertSessionStateToPrimitives(value);
+					}
 				}
 			}
 		}
@@ -262,31 +255,38 @@ package weave.core
 
 		/**
 		 * This function converts a session state from XML format to Object format.  Nested XML objects will be converted to Strings before returning.
-		 * @param sessionState A session state that has been encoded in XML.  This can be supplied as either an XML object or a String.
+		 * @param sessionState A session state that has been encoded in an XML String.
 		 * @return The deserialized session state object.
 		 */
-		public function convertSessionStateXMLToObject(sessionStateXML:Object):Object
+		public function convertSessionStateXMLToObject(sessionStateXML:String):Object
 		{
-			if (!(sessionStateXML is XML))
-				sessionStateXML = XML(sessionStateXML);
-			var state:Object = WeaveXMLDecoder.decode(sessionStateXML as XML);
+			var xml:XML = XML(sessionStateXML);
+			var state:Object = WeaveXMLDecoder.decode(xml);
 			convertSessionStateToPrimitives(state); // do not allow XML objects to be returned
 			return state;
 		}
 
 		/**
 		 * @see weave.api.core.IExternalSessionStateInterface
-		 */   
-		public function evaluateExpression(scopeObjectPath:Array, expression:String, variables:Object = null, staticLibraries:Array = null):*
+		 */
+		public function evaluateExpression(scopeObjectPathOrExpressionName:Object, expression:String, variables:Object = null, staticLibraries:Array = null, assignExpressionName:String = null):*
 		{
 			var result:* = undefined;
 			try
 			{
 				var compiler:Compiler = new Compiler();
 				compiler.includeLibraries.apply(null, staticLibraries);
-				var thisObject:ILinkableObject = (scopeObjectPath) ? getObject(scopeObjectPath) : null;
-				var compiledMethod:Function = compiler.compileToFunction(expression, variables, false, thisObject != null);
-				result = compiledMethod.apply(thisObject, arguments);
+				function evalExpression(...args):*
+				{
+					var thisObject:Object = getObjectFromPathOrExpressionName(scopeObjectPathOrExpressionName);
+					var compiledMethod:Function = compiler.compileToFunction(expression, variables, false, thisObject != null);
+					return compiledMethod.apply(thisObject, args);
+				}
+				
+				if (assignExpressionName)
+					_namedExpressions[assignExpressionName] = evalExpression;
+				else
+					result = evalExpression.apply(null, arguments);
 			}
 			catch (e:Error)
 			{
@@ -294,6 +294,11 @@ package weave.core
 			}
 			return result;
 		}
+		
+		/**
+		 * This object maps an expression name to the saved expression function.
+		 */		
+		private const _namedExpressions:Object = {};
 		
 		/**
 		 * This object maps a JavaScript callback function, specified as a String, to a corresponding Function that will call it.
@@ -328,12 +333,36 @@ package weave.core
 			return _callbackFunctionCache[callback];
 		}
 		
+		private function getObjectFromPathOrExpressionName(objectPathOrExpressionName:Object):Object
+		{
+			if (objectPathOrExpressionName is Array)
+				return getObject(objectPathOrExpressionName as Array);
+			
+			var expressionName:String = objectPathOrExpressionName as String;
+			if (expressionName)
+			{
+				var func:Function = _namedExpressions[expressionName] as Function;
+				try
+				{
+					if (func == null)
+						reportError('Undefined expression "' + expressionName + '"');
+					else
+						return func();
+				}
+				catch (e:Error)
+				{
+					reportError(e);
+				}
+			}
+			return null;
+		}
+		
 		/**
 		 * @see weave.api.core.IExternalSessionStateInterface
 		 */
-		public function addCallback(objectPath:Array, callback:String, triggerCallbackNow:Boolean = false):Boolean
+		public function addCallback(objectPathOrExpressionName:Object, callback:String, triggerCallbackNow:Boolean = false):Boolean
 		{
-			var object:ILinkableObject = getObject(objectPath);
+			var object:ILinkableObject = getObjectFromPathOrExpressionName(objectPathOrExpressionName) as ILinkableObject;
 			if (object == null)
 				return false;
 			// always use a grouped callback to avoid messy situations with javascript alert boxes
@@ -344,13 +373,32 @@ package weave.core
 		/**
 		 * @see weave.api.core.IExternalSessionStateInterface
 		 */
-		public function removeCallback(objectPath:Array, callback:String):Boolean
+		public function removeCallback(objectPathOrExpressionName:Object, callback:String):Boolean
 		{
-			var object:ILinkableObject = getObject(objectPath);
+			var object:ILinkableObject = getObjectFromPathOrExpressionName(objectPathOrExpressionName) as ILinkableObject;
 			if (object == null)
 				return false;
 			getCallbackCollection(object).removeCallback(getCachedCallbackFunction(callback));
 			return true;
+		}
+		
+		/**
+		 * This surrounds ExternalInterface.addCallback() with try/catch and reports the error.
+		 * @see flash.external.ExternalInterface#addCallback
+		 */
+		public static function tryAddCallback(functionName:String, closure:Function):void
+		{
+			try
+			{
+				ExternalInterface.addCallback(functionName, closure);
+			}
+			catch (e:Error)
+			{
+				if (e.errorID == 2060)
+					reportError(e, "In the HTML embedded object tag, make sure that the parameter 'allowScriptAccess' is set to 'always'. " + e.message);
+				else
+					reportError(e);
+			}
 		}
 	}
 }

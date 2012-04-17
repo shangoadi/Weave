@@ -36,13 +36,14 @@
 			import weave.api.WeaveAPI;
 			import weave.api.data.IDataSource;
 			import weave.api.getSessionState;
+			import weave.api.ui.IVisTool;
 			import weave.core.SessionManager;
 			import weave.data.ColumnReferences.HierarchyColumnReference;
 			import weave.primitives.AttributeHierarchy;
 			import weave.utils.HierarchyUtils;
 
-	//constructor
-	
+			WeaveAPI.registerImplementation(IVisTool, TimeSliderTool, "Time Slider Tool");
+			
 	override protected function constructor():void
 	{
 		super.constructor();
@@ -93,24 +94,25 @@
 	 * **/
 	override public function handleSliderChange():void
 	{
-		var newTime:String = dimensionSlider.labels[dimensionSlider.value];
+		var newTime:String = dimensionSlider.labels[dimensionSlider.value] || '';
+		if (!newTime)
+			return;
 		var descendants:Array = WeaveAPI.SessionManager.getLinkableDescendants(Weave.root, HierarchyColumnReference);
 		var len:int = descendants.length;
 		for (var i:int = 0; i < len; i++)
 		{
 			var ref:HierarchyColumnReference = descendants[i] as HierarchyColumnReference;
-			var path:XML = ref.hierarchyPath.value;
-			var attr:XML = path..attribute[0];
-			if (String(attr.@year) != '')
+			var path:XML = XML(ref.hierarchyPath.value).copy(); // make a copy so we don't modify the original
+			var search:XML = path..attribute[0];
+			if (String(search.@year) && String(search.@year) != newTime)
 			{
-				delete attr.@title;
-				attr.@year = newTime;
-				if (attr.@csvColumn)
+				delete search.@title;
+				search.@year = newTime;
+				if (search.@csvColumn)
 				{
 					// this hack adds support for CSVDataSource
 					try
 					{
-						var search:XML = attr.copy();
 						delete search.@csvColumn;
 						if (String(search.@name))
 							delete search.@title;
@@ -120,7 +122,7 @@
 						{
 							if (HierarchyUtils.nodeContainsAttributes(list[j], search))
 							{
-								ref.hierarchyPath.value = hierarchy.getPathFromNode(list[j]);
+								path = hierarchy.getPathFromNode(list[j]);
 								break;
 							}
 						}
@@ -128,7 +130,7 @@
 					catch (e:Error) { }
 				}
 			}
-			ref.hierarchyPath.detectChanges();
+			ref.hierarchyPath.value = path;
 		}
 	}
 	

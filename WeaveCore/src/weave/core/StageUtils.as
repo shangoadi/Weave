@@ -34,31 +34,39 @@ package weave.core
 	
 	import weave.api.WeaveAPI;
 	import weave.api.core.ICallbackCollection;
+	import weave.api.core.IStageUtils;
+	import weave.api.newLinkableChild;
 	import weave.api.reportError;
+	import weave.compiler.StandardLib;
+	import weave.utils.DebugTimer;
 	
 	use namespace mx_internal;
 	
 	/**
-	 * This is an all-static class that allows you to add callbacks that will be called when an event occurs on the stage.
+	 * This allows you to add callbacks that will be called when an event occurs on the stage.
 	 * 
 	 * WARNING: These callbacks will trigger on every mouse and keyboard event that occurs on the stage.
 	 *          Developers should not add any callbacks that run computationally expensive code.
 	 * 
 	 * @author adufilie
 	 */
-	public class StageUtils
+	public class StageUtils implements IStageUtils
 	{
-		// begin static code block
+		[Bindable] public var enableThreadPriorities:Boolean = false;
+		
+		private const frameTimes:Array = [];
+		private var debug_fps:Boolean = false;
+		
+		public function StageUtils()
 		{
 			initialize();
 		}
-		// end static code block
 		
 		/**
 		 * This is the last keyboard event that occurred on the stage.
 		 * This variable is set while callbacks are running and is cleared immediately after.
 		 */
-		public static function get keyboardEvent():KeyboardEvent
+		public function get keyboardEvent():KeyboardEvent
 		{
 			return _event as KeyboardEvent;
 		}
@@ -66,7 +74,7 @@ package weave.core
 		 * This is the last mouse event that occurred on the stage.
 		 * This variable is set while callbacks are running and is cleared immediately after.
 		 */
-		public static function get mouseEvent():MouseEvent
+		public function get mouseEvent():MouseEvent
 		{
 			return _event as MouseEvent;
 		}
@@ -74,50 +82,50 @@ package weave.core
 		 * This is the last event that occurred on the stage.
 		 * This variable is set while callbacks are running and is cleared immediately after.
 		 */
-		public static function get event():Event
+		public function get event():Event
 		{
 			return _event as Event;
 		}
-		private static var _event:Event = null; // returned by get event()
+		private var _event:Event = null; // returned by get event()
 		
 		/**
 		 * @return The current pressed state of the ctrl key.
 		 */
-		public static function get shiftKey():Boolean
+		public function get shiftKey():Boolean
 		{
 			return _shiftKey;
 		}
-		private static var _shiftKey:Boolean = false; // returned by get shiftKey()
+		private var _shiftKey:Boolean = false; // returned by get shiftKey()
 		/**
 		 * @return The current pressed state of the ctrl key.
 		 */
-		public static function get altKey():Boolean
+		public function get altKey():Boolean
 		{
 			return _altKey;
 		}
-		private static var _altKey:Boolean = false; // returned by get altKey()
+		private var _altKey:Boolean = false; // returned by get altKey()
 		/**
 		 * @return The current pressed state of the ctrl key.
 		 */
-		public static function get ctrlKey():Boolean
+		public function get ctrlKey():Boolean
 		{
 			return _ctrlKey;
 		}
-		private static var _ctrlKey:Boolean = false; // returned by get ctrlKey()
+		private var _ctrlKey:Boolean = false; // returned by get ctrlKey()
 		
 		/**
 		 * @return The current pressed state of the mouse button.
 		 */
-		public static function get mouseButtonDown():Boolean
+		public function get mouseButtonDown():Boolean
 		{
 			return _mouseButtonDown;
 		}
-		private static var _mouseButtonDown:Boolean = false; // returned by get mouseButtonDown()
+		private var _mouseButtonDown:Boolean = false; // returned by get mouseButtonDown()
 		
 		/**
 		 * @return true if the mouse moved since the last frame.
 		 */
-		public static function get mouseMoved():Boolean
+		public function get mouseMoved():Boolean
 		{
 			if (!_stage)
 				return false;
@@ -127,7 +135,7 @@ package weave.core
 		/**
 		 * This is the total time it took to process the previous frame.
 		 */
-		public static function get previousFrameElapsedTime():int
+		public function get previousFrameElapsedTime():int
 		{
 			return _previousFrameElapsedTime;
 		}
@@ -135,7 +143,7 @@ package weave.core
 		/**
 		 * This is the amount of time the current frame has taken to process so far.
 		 */
-		public static function get currentFrameElapsedTime():int
+		public function get currentFrameElapsedTime():int
 		{
 			return getTimer() - _currentFrameStartTime;
 		}
@@ -143,16 +151,32 @@ package weave.core
 		/**
 		 * When the current frame elapsed time reaches this threshold, callLater processing will be done in later frames.
 		 */
-		private static const maxComputationTimePerFrame:int = 100;
-
+		[Bindable] public var maxComputationTimePerFrame:uint = 100;
+		
 		/**
 		 * This function gets called on ENTER_FRAME events.
 		 */
-		private static function handleEnterFrame():void
+		private function handleEnterFrame():void
 		{
 			var currentTime:int = getTimer();
 			_previousFrameElapsedTime = currentTime - _currentFrameStartTime;
 			_currentFrameStartTime = currentTime;
+			if (maxComputationTimePerFrame == 0)
+				maxComputationTimePerFrame = 100;
+			
+			if (debug_fps)
+			{
+				frameTimes.push(previousFrameElapsedTime);
+				if (frameTimes.length == 24)
+				{
+					trace(Math.round(1000 / StandardLib.mean.apply(null, frameTimes)),'fps; max computation time',maxComputationTimePerFrame);
+					frameTimes.length = 0;
+				}
+			}
+			
+			if (_previousFrameElapsedTime > 3000)
+				trace(_previousFrameElapsedTime);
+			
 			// update mouse coordinates
 			_lastMousePoint.x = _stage.mouseX;
 			_lastMousePoint.y = _stage.mouseY;
@@ -181,15 +205,16 @@ package weave.core
 			if (_callLaterArray.length > 0 && UIComponentGlobals.callLaterSuspendCount <= 0)
 			{
 				//trace("handle ENTER_FRAME, " + _callLaterArray.length + " callLater functions, " + currentFrameElapsedTime + " ms elapsed this frame");
-				// Make a copy of the function calls and clear the static array before executing any functions.
-				// This allows the static array to be filled up as a result of executing the functions,
+				// Make a copy of the function calls and clear the private array before executing any functions.
+				// This allows the private array to be filled up as a result of executing the functions,
 				// and prevents from newly added functions from being called until the next frame.
 				calls = _callLaterArray;
 				_callLaterArray = [];
+				var stopTime:int = _currentFrameStartTime + maxComputationTimePerFrame;
 				for (i = 0; i < calls.length; i++)
 				{
 					// if elapsed time reaches threshold, call everything else later
-					if (getTimer() - _currentFrameStartTime > maxComputationTimePerFrame)
+					if (getTimer() > stopTime)
 					{
 						// To preserve the order they were added, put the remaining callLater
 						// functions for this frame in front of any others that may have been added.
@@ -203,12 +228,17 @@ package weave.core
 					stackTrace = _stackTraceMap[args]; // check this for debugging where the call came from
 					// don't call the function if the relevantContext was disposed of.
 					if (!WeaveAPI.SessionManager.objectWasDisposed(args[0]))
+					{
+						// TODO: PROFILING: check how long this function takes to execute.
+						// if it takes a long time (> 1000 ms), something's wrong...
+						
 						(args[1] as Function).apply(null, args[2]);
+					}
 				}
 			}
 		}
-		private static var _currentFrameStartTime:int = getTimer(); // this is the result of getTimer() on the last ENTER_FRAME event.
-		private static var _previousFrameElapsedTime:int = 0; // this is the amount of time it took to process the previous frame.
+		private var _currentFrameStartTime:int = getTimer(); // this is the result of getTimer() on the last ENTER_FRAME event.
+		private var _previousFrameElapsedTime:int = 0; // this is the amount of time it took to process the previous frame.
 		
 		/**
 		 * This calls a function in a future ENTER_FRAME event.  The function call will be delayed
@@ -217,7 +247,7 @@ package weave.core
 		 * @param method The function to call later.
 		 * @param parameters The parameters to pass to the function.
 		 */
-		public static function callLater(relevantContext:Object, method:Function, parameters:Array = null, allowMultipleFrameDelay:Boolean = true):void
+		public function callLater(relevantContext:Object, method:Function, parameters:Array = null, allowMultipleFrameDelay:Boolean = true):void
 		{
 			//trace("call later @",currentFrameElapsedTime);
 			if (allowMultipleFrameDelay)
@@ -229,19 +259,19 @@ package weave.core
 				_stackTraceMap[arguments] = new Error("Stack trace").getStackTrace();
 		}
 		
-		private static const _stackTraceMap:Dictionary = new Dictionary(true);
+		private const _stackTraceMap:Dictionary = new Dictionary(true);
 		
 		/**
 		 * This is an array of functions with parameters that will be executed the next time handleEnterFrame() is called.
 		 * This array gets populated by callLater().
 		 */
-		private static var _callNextFrameArray:Array = [];
+		private var _callNextFrameArray:Array = [];
 		
 		/**
 		 * This is an array of functions with parameters that will be executed the next time handleEnterFrame() is called.
 		 * This array gets populated by callLater().
 		 */
-		private static var _callLaterArray:Array = [];
+		private var _callLaterArray:Array = [];
 		
 		/**
 		 * This will start an asynchronous task, calling iterativeTask() across multiple frames until it returns a value of 1 or the relevantContext object is disposed of.
@@ -263,21 +293,38 @@ package weave.core
 		 *           index++;
 		 *           return index / array.length;  // this will return 1.0 on the last iteration.
 		 *       }
+		 * @param priority The task priority, which should be one of the static constants in WeaveAPI.
+		 * @see weave.api.WeaveAPI
 		 */
-		public static function startTask(relevantContext:Object, iterativeTask:Function):void
+		public function startTask(relevantContext:Object, iterativeTask:Function, priority:int):void
 		{
 			// do nothing if task already active
 			if (WeaveAPI.ProgressIndicator.hasTask(iterativeTask))
 				return;
 			
+			if (priority == WeaveAPI.TASK_PRIORITY_RENDERING && !enableThreadPriorities)
+			{
+				while (iterativeTask() < 1) { }
+				return;
+			}
+			
+			if (priority <= 0)
+			{
+				reportError("Task priority " + priority + " is not supported.");
+				priority = WeaveAPI.TASK_PRIORITY_BUILDING;
+			}
+			
 			WeaveAPI.ProgressIndicator.addTask(iterativeTask);
-			_iterateTask(relevantContext, iterativeTask);
+			
+			_iterateTask(relevantContext, iterativeTask, priority);
 		}
+		
+		public var debug_delayTasks:Boolean = false;
 		
 		/**
 		 * @private
 		 */
-		private static function _iterateTask(context:Object, task:Function):void
+		private function _iterateTask(context:Object, task:Function, priority:int):void
 		{
 			// remove the task if the context was disposed of
 			if (WeaveAPI.SessionManager.objectWasDisposed(context))
@@ -286,9 +333,15 @@ package weave.core
 				return;
 			}
 			
+			var stopTime:int;
+			if (enableThreadPriorities)
+				stopTime = _currentFrameStartTime + maxComputationTimePerFrame / priority;
+			else
+				stopTime = _currentFrameStartTime + 100;
+			
 			var progress:* = undefined;
-			// iterate on the task until max computation time is reached
-			while (getTimer() - _currentFrameStartTime < maxComputationTimePerFrame)
+			// iterate on the task until stopTime is reached
+			while (getTimer() < stopTime)
 			{
 				// perform the next iteration of the task
 				progress = task() as Number;
@@ -303,6 +356,8 @@ package weave.core
 					WeaveAPI.ProgressIndicator.removeTask(task);
 					return;
 				}
+				if (debug_delayTasks)
+					break;
 			}
 			// max computation time reached without finishing the task, so update the progress indicator and continue the task later
 			if (progress !== undefined)
@@ -317,7 +372,7 @@ package weave.core
 		/**
 		 * This function gets called when a mouse click event occurs.
 		 */
-		private static function handleMouseDown():void
+		private function handleMouseDown():void
 		{
 			// remember the mouse down point for handling POINT_CLICK_EVENT callbacks.
 			_lastMouseDownPoint.x = mouseEvent.stageX;
@@ -326,7 +381,7 @@ package weave.core
 		/**
 		 * This function gets called when a mouse click event occurs.
 		 */
-		private static function handleMouseClick():void
+		private function handleMouseClick():void
 		{
 			// if the mouse down point is the same as the mouse click point, trigger the POINT_CLICK_EVENT callbacks.
 			if (_lastMouseDownPoint.x == mouseEvent.stageX && _lastMouseDownPoint.y == mouseEvent.stageY)
@@ -341,15 +396,15 @@ package weave.core
 		 * This is a list of eventType Strings that can be passed to addEventCallback().
 		 * @return An Array of Strings.
 		 */
-		public static function getSupportedEventTypes():Array
+		public function getSupportedEventTypes():Array
 		{
 			return _eventTypes.concat();
 		}
 		
 		/**
-		 * This is a list of supported events.
+		 * This is a list of supported event types.
 		 */
-		private static const _eventTypes:Array = [ 
+		private const _eventTypes:Array = [ 
 				POINT_CLICK_EVENT,
 				Event.ACTIVATE, Event.DEACTIVATE,
 				MouseEvent.CLICK, MouseEvent.DOUBLE_CLICK,
@@ -360,24 +415,23 @@ package weave.core
 				KeyboardEvent.KEY_DOWN, KeyboardEvent.KEY_UP,
 				Event.ENTER_FRAME, Event.FRAME_CONSTRUCTED, Event.EXIT_FRAME, Event.RENDER
 			];
-		private static var _callbackCollectionsInitialized:Boolean = false; // This is true after the callback collections have been created.
-		private static var _listenersInitialized:Boolean = false; // This is true after the mouse listeners have been added.
+		private var _callbackCollectionsInitialized:Boolean = false; // This is true after the callback collections have been created.
+		private var _listenersInitialized:Boolean = false; // This is true after the mouse listeners have been added.
 		
 		/**
 		 * This timer is only used if initialize() is attempted before the stage is accessible.
 		 */
-		private static const _initializeTimer:Timer = new Timer(0, 1);
+		private const _initializeTimer:Timer = new Timer(0, 1);
 
 		/**
 		 * This is a mapping from an event type to a callback collection associated with it.
-		 * Event types are those defined in static constants of the MouseEvent class.
 		 */
-		private static const _callbackCollections:Object = {};
+		private const _callbackCollections:Object = {};
 		
 		/**
-		 * initialize static callback collections.
+		 * initialize callback collections.
 		 */
-		private static function initialize(event:TimerEvent = null):void
+		private function initialize(event:TimerEvent = null):void
 		{
 			var type:String;
 			
@@ -428,15 +482,15 @@ package weave.core
 		 * This is for internal use only.
 		 * These inline functions are generated inside this function to avoid re-use of local variables.
 		 * @param eventType An event type to generate a listener function for.
-		 * @return An event listener function for the given eventType that updates static variables and runs event callbacks.
+		 * @return An event listener function for the given eventType that updates the event variables and runs event callbacks.
 		 */
-		private static function generateListeners(eventType:String):void
+		private function generateListeners(eventType:String):void
 		{
 			var cc:ICallbackCollection = _callbackCollections[eventType] as ICallbackCollection;
 
 			var captureListener:Function = function (event:Event):void
 			{
-				// set static variables
+				// set event variables
 				_event = event;
 				var mouseEvent:MouseEvent = event as MouseEvent;
 				if (mouseEvent)
@@ -462,7 +516,7 @@ package weave.core
 				}
 				// run callbacks for this event type
 				cc.triggerCallbacks();
-				// clear static _event variable
+				// clear _event variable
 				_event = null;
 			};
 			
@@ -486,25 +540,23 @@ package weave.core
 		 * This Array is used to keep strong references to the generated listeners so that they can be added with weak references.
 		 * The weak references only matter when this code is loaded as a sub-application and later unloaded.
 		 */		
-		private static const _generatedListeners:Array = [];
+		private const _generatedListeners:Array = [];
 		
 		/**
 		 * WARNING: These callbacks will trigger on every mouse event that occurs on the stage.
 		 *          Developers should not add any callbacks that run computationally expensive code.
 		 * 
-		 * This function will add a callback using the given function and parameters.
-		 * Any callback previously added for the same function will be overwritten.
-		 * @param eventType The name of the event to add a callback for, one of the static values in the MouseEvent class.
+		 * This function will add the given function as a callback.  The function must not require any parameters.
+		 * @param eventType The name of the event to add a callback for.
 		 * @param callback The function to call when an event of the specified type is dispatched from the stage.
-		 * @param parameters An array of parameters that will be used as parameters to the callback function.
 		 * @param runCallbackNow If this is set to true, the callback will be run immediately after it is added.
 		 */
-		public static function addEventCallback(eventType:String, relevantContext:Object, callback:Function, parameters:Array = null, runCallbackNow:Boolean = false):void
+		public function addEventCallback(eventType:String, relevantContext:Object, callback:Function, runCallbackNow:Boolean = false):void
 		{
 			var cc:ICallbackCollection = _callbackCollections[eventType] as ICallbackCollection;
 			if (cc != null)
 			{
-				cc.addImmediateCallback(relevantContext, callback, parameters, runCallbackNow);
+				cc.addImmediateCallback(relevantContext, callback, runCallbackNow);
 			}
 			else
 			{
@@ -513,10 +565,10 @@ package weave.core
 		}
 		
 		/**
-		 * @param eventType The name of the event to remove a callback for, one of the static values in the MouseEvent class.
+		 * @param eventType The name of the event to remove a callback for.
 		 * @param callback The function to remove from the list of callbacks.
 		 */
-		public static function removeEventCallback(eventType:String, callback:Function):void
+		public function removeEventCallback(eventType:String, callback:Function):void
 		{
 			var cc:ICallbackCollection = _callbackCollections[eventType] as ICallbackCollection;
 			if (cc != null)
@@ -526,17 +578,17 @@ package weave.core
 		/**
 		 * This is a pointer to the stage.  This is null until initialize() is successfully called.
 		 */
-		private static var _stage:Stage = null;
+		private var _stage:Stage = null;
 		
 		/**
 		 * This object contains the stage coordinates of the mouse for the current frame.
 		 */
-		private static const _lastMousePoint:Point = new Point(NaN, NaN);
+		private const _lastMousePoint:Point = new Point(NaN, NaN);
 		
 		/**
 		 * This is the stage location of the last mouse-down event.
 		 */
-		private static const _lastMouseDownPoint:Point = new Point(NaN, NaN);
+		private const _lastMouseDownPoint:Point = new Point(NaN, NaN);
 		
 		/**
 		 * This is a special pseudo-event supported by StageUtils.

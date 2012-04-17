@@ -19,16 +19,21 @@
 
 package weave
 {
+	import flash.display.Stage;
 	import flash.events.Event;
 	import flash.events.IOErrorEvent;
 	import flash.events.SecurityErrorEvent;
 	import flash.external.ExternalInterface;
 	import flash.net.URLRequest;
+	import flash.system.ApplicationDomain;
 	import flash.text.Font;
 	import flash.utils.ByteArray;
+	import flash.utils.Dictionary;
 	
 	import mx.collections.ArrayCollection;
 	import mx.controls.ToolTip;
+	import mx.rpc.events.FaultEvent;
+	import mx.rpc.events.ResultEvent;
 	import mx.utils.StringUtil;
 	
 	import ru.etcs.utils.FontLoader;
@@ -36,6 +41,7 @@ package weave
 	import weave.api.WeaveAPI;
 	import weave.api.core.ILinkableHashMap;
 	import weave.api.core.ILinkableObject;
+	import weave.api.linkBindableProperty;
 	import weave.api.registerLinkableChild;
 	import weave.api.reportError;
 	import weave.compiler.StandardLib;
@@ -45,11 +51,15 @@ package weave
 	import weave.core.LinkableNumber;
 	import weave.core.LinkableString;
 	import weave.core.SessionManager;
+	import weave.core.StageUtils;
 	import weave.core.weave_internal;
 	import weave.data.AttributeColumns.AbstractAttributeColumn;
+	import weave.data.AttributeColumns.SecondaryKeyNumColumn;
 	import weave.data.AttributeColumns.StreamedGeometryColumn;
 	import weave.data.CSVParser;
-	import weave.resources.fonts.EmbeddedFonts;
+	import weave.ui.AttributeMenuTool;
+	import weave.ui.JRITextEditor;
+	import weave.ui.RTextEditor;
 	import weave.utils.CSSUtils;
 	import weave.utils.DebugUtils;
 	import weave.utils.LinkableTextFormat;
@@ -57,6 +67,26 @@ package weave
 	import weave.utils.ProbeTextUtils;
 	import weave.visualization.layers.InteractionController;
 	import weave.visualization.layers.LinkableEventListener;
+	import weave.visualization.tools.ColorBinLegendTool;
+	import weave.visualization.tools.ColormapHistogramTool;
+	import weave.visualization.tools.CompoundBarChartTool;
+	import weave.visualization.tools.CompoundRadVizTool;
+	import weave.visualization.tools.CustomTool;
+	import weave.visualization.tools.DataTableTool;
+	import weave.visualization.tools.DimensionSliderTool;
+	import weave.visualization.tools.GaugeTool;
+	import weave.visualization.tools.Histogram2DTool;
+	import weave.visualization.tools.HistogramTool;
+	import weave.visualization.tools.LineChartTool;
+	import weave.visualization.tools.MapTool;
+	import weave.visualization.tools.PieChartHistogramTool;
+	import weave.visualization.tools.PieChartTool;
+	import weave.visualization.tools.RadVizTool;
+	import weave.visualization.tools.RamachandranPlotTool;
+	import weave.visualization.tools.ScatterPlotTool;
+	import weave.visualization.tools.ThermometerTool;
+	import weave.visualization.tools.TimeSliderTool;
+	import weave.visualization.tools.TransposedTableTool;
 
 	use namespace weave_internal;
 	
@@ -79,7 +109,7 @@ package weave
 			for each (var propertyName:String in (WeaveAPI.SessionManager as SessionManager).getLinkablePropertyNames(this))
 				registerLinkableChild(this, this[propertyName] as ILinkableObject);
 			
-			loadEmbeddedFonts();
+			loadWeaveFontsSWF();
 
 			// handle dynamic changes to the session state that change what CSS file to use
 			cssStyleSheetName.addGroupedCallback(
@@ -93,36 +123,51 @@ package weave
 			panelTitleTextFormat.font.value = "Verdana";
 			panelTitleTextFormat.size.value = 10;
 			panelTitleTextFormat.color.value = 0xFFFFFF;
+			
+			_initToggleMap();
+			
+			linkBindableProperty(enableThreadPriorities, WeaveAPI.StageUtils, 'enableThreadPriorities');
+			linkBindableProperty(maxComputationTimePerFrame, WeaveAPI.StageUtils, 'maxComputationTimePerFrame');
 		}
 		
-		private function loadEmbeddedFonts():void
+		public static const embeddedFonts:ArrayCollection = new ArrayCollection();
+		private static function loadWeaveFontsSWF():void
 		{
-			fontLoader.autoRegister = true;
-			fontLoader.addEventListener(Event.COMPLETE,weaveFontsLoaded);
-			fontLoader.addEventListener(IOErrorEvent.IO_ERROR,handleLoaderErrorEvent);
-			fontLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, handleLoaderErrorEvent);
-			fontLoader.load(new URLRequest("WeaveFonts.swf"));
-		}
-		
-		private var fontLoader:FontLoader = new FontLoader();
-		
-		public static const embeddedFonts:ArrayCollection = new ArrayCollection([EmbeddedFonts.SophiaNubian]);
-		private function weaveFontsLoaded(event:Event):void
-		{
-			var fonts:Array = fontLoader.fonts;
-			
-			
-			for each (var font:Font in fonts)
-			{
-				if(!embeddedFonts.contains(font.fontName))
-					embeddedFonts.addItem(font.fontName);
-			}
-			
-		}
-		
-		private function handleLoaderErrorEvent(event:Event):void
-		{
-			//DO Nothing
+			WeaveAPI.URLRequestUtils.getURL(
+				new URLRequest('WeaveFonts.swf'),
+				function(event:ResultEvent, token:Object = null):void
+				{
+					var fontLoader:FontLoader = new FontLoader();
+					fontLoader.addEventListener(
+						Event.COMPLETE,
+						function(event:Event):void
+						{
+							try
+							{
+								var fonts:Array = fontLoader.fonts;
+								for each (var font:Font in fonts)
+								{
+									var fontClass:Class = Object(font).constructor;
+									Font.registerFont(fontClass);
+									if (!embeddedFonts.contains(font.fontName))
+										embeddedFonts.addItem(font.fontName);
+								}
+							}
+							catch (e:Error)
+							{
+								var app:Object = WeaveAPI.topLevelApplication;
+								if (app.parent && app.parent.parent is Stage) // don't report error if loaded as a nested app
+									reportError(e);
+							}
+						}
+					);
+					fontLoader.loadBytes(ByteArray(event.result), false);
+				},
+				function(event:FaultEvent, token:Object = null):void
+				{
+					reportError(event.fault);
+				}
+			);
 		}
 		
 		public static const DEFAULT_BACKGROUND_COLOR:Number = 0xCCCCCC;
@@ -154,15 +199,59 @@ package weave
 		public const enableMouseWheel:LinkableBoolean = new LinkableBoolean(true);
 		public const enableDynamicTools:LinkableBoolean = new LinkableBoolean(true); // move/resize/add/remove/close tools
 		
+		// Collaboration
+		public const enableCollaborationBar:LinkableBoolean = new LinkableBoolean(false); // collaboration menu bar (bottom of screen)
+		public const showCollaborationEditor:LinkableBoolean = new LinkableBoolean(false); // menu item
+		public const collabServerIP:LinkableString = new LinkableString("demo.oicweave.org");
+		public const collabServerName:LinkableString = new LinkableString("ivpr-vm");
+		public const collabServerPort:LinkableString = new LinkableString("5222");
+		public const collabServerRoomToJoin:LinkableString = new LinkableString("demo");
+		public const collabSpectating:LinkableBoolean = new LinkableBoolean(false);
+		
+		
 		public const showColorController:LinkableBoolean = new LinkableBoolean(true); // Show Color Controller option tools menu
 		public const showProbeToolTipEditor:LinkableBoolean = new LinkableBoolean(true);  // Show Probe Tool Tip Editor tools menu
 		public const showEquationEditor:LinkableBoolean = new LinkableBoolean(true); // Show Equation Editor option tools menu
 		public const showAttributeSelector:LinkableBoolean = new LinkableBoolean(true); // Show Attribute Selector tools menu
 		public const enableNewUserWizard:LinkableBoolean = new LinkableBoolean(true); // Add New User Wizard option tools menu		
+
+		// BEGIN TEMPORARY SOLUTION
+		public const _toggleMap:Dictionary = new Dictionary();
+		private function _initToggleMap():void
+		{
+			var toggles:Array = [
+				[enableAddAttributeMenuTool, AttributeMenuTool],
+				[enableAddBarChart, CompoundBarChartTool],
+				[enableAddColormapHistogram, ColormapHistogramTool],
+				[enableAddColorLegend, ColorBinLegendTool],
+				[enableAddCompoundRadViz, CompoundRadVizTool],
+				[enableAddDataTable, DataTableTool],
+				[enableAddDimensionSliderTool, DimensionSliderTool],
+				[enableAddGaugeTool, GaugeTool],
+				[enableAddHistogram, HistogramTool],
+				[enableAdd2DHistogram, Histogram2DTool],
+				[enableAddRScriptEditor, JRITextEditor],
+				[enableAddLineChart, LineChartTool],
+				[enableAddMap, MapTool],
+				[enableAddPieChart, PieChartTool],
+				[enableAddPieChartHistogram, PieChartHistogramTool],
+				[enableAddRScriptEditor, RTextEditor],
+				[enableAddRadViz, RadVizTool],
+				[enableAddRamachandranPlot, RamachandranPlotTool],
+				[enableAddScatterplot, ScatterPlotTool],
+				[enableAddThermometerTool, ThermometerTool],
+				[enableAddTimeSliderTool, TimeSliderTool],
+				[enableAddDataTable, TransposedTableTool],
+				[enableAddCustomTool, CustomTool]
+			];
+			for each (var pair:Array in toggles)
+				_toggleMap[pair[1]] = pair[0];
+		}
+		// END TEMPORARY SOLUTION
 		
 		public const enableAddAttributeMenuTool:LinkableBoolean = new LinkableBoolean(true); // Add Attribute Menu Tool option tools menu
 		public const enableAddBarChart:LinkableBoolean = new LinkableBoolean(true); // Add Bar Chart option tools menu
-		public const enableAddCollaborationTool:LinkableBoolean = new LinkableBoolean(false);
+//		public const enableAddCollaborationTool:LinkableBoolean = new LinkableBoolean(false);
 		public const enableAddColorLegend:LinkableBoolean = new LinkableBoolean(true); // Add Color legend Tool option tools menu		
 		public const enableAddColormapHistogram:LinkableBoolean = new LinkableBoolean(true); // Add Colormap Histogram option tools menu
 		public const enableAddCompoundRadViz:LinkableBoolean = new LinkableBoolean(true); // Add CompoundRadViz option tools menu
@@ -194,12 +283,21 @@ package weave
 		
 		public const enableProbeAnimation:LinkableBoolean = new LinkableBoolean(true);
 		public const maxTooltipRecordsShown:LinkableNumber = new LinkableNumber(1, verifyMaxTooltipRecordsShown); // maximum number of records shown in the probe toolTips
+		public const showSelectedRecordsText:LinkableBoolean = new LinkableBoolean(true); // show the tooltip in the lower-right corner of the application
 		public const enableBitmapFilters:LinkableBoolean = new LinkableBoolean(true); // enable/disable bitmap filters while probing or selecting
 		public const enableGeometryProbing:LinkableBoolean = new LinkableBoolean(true); // use the geometry probing (default to on even though it may be slow for mapping)
 		public function get geometryMetadataRequestMode():LinkableString { return StreamedGeometryColumn.metadataRequestMode; }
 		public function get geometryMinimumScreenArea():LinkableNumber { return StreamedGeometryColumn.geometryMinimumScreenArea; }
 		
+		public function shouldEnableGeometryProbing():Boolean
+		{
+			// disable detailed geometry probing while there are background tasks
+			return enableGeometryProbing.value
+				&& WeaveAPI.ProgressIndicator.getTaskCount() == 0;
+		}
+		
 		public const enableSessionMenu:LinkableBoolean = new LinkableBoolean(true); // all sessioning
+		public const showSessionHistoryControls:LinkableBoolean = new LinkableBoolean(true); // show session history controls inside Weave interface
 
 		public const enableUserPreferences:LinkableBoolean = new LinkableBoolean(true); // open the User Preferences Panel
 		
@@ -207,13 +305,14 @@ package weave
 		
 		public const enableMarker:LinkableBoolean = new LinkableBoolean(true);
 		public const enableDrawCircle:LinkableBoolean = new LinkableBoolean(true);
+		public const enableAnnotation:LinkableBoolean = new LinkableBoolean(true);
+		public const enablePenTool:LinkableBoolean = new LinkableBoolean(true);
 		
-		public const enableMenuBar:LinkableBoolean = new LinkableBoolean(true); // top menu for advanced features
+		public const enableMenuBar:LinkableBoolean = new LinkableBoolean(true); // top menu for advanced features		
 		public const enableSubsetControls:LinkableBoolean = new LinkableBoolean(true); // creating subsets
 		public const enableExportToolImage:LinkableBoolean = new LinkableBoolean(true); // print/export tool images
 		public const enableExportCSV:LinkableBoolean = new LinkableBoolean(true);
 		public const enableExportApplicationScreenshot:LinkableBoolean = new LinkableBoolean(true); // print/export application screenshot
-		public const enableExportDataTable:LinkableBoolean = new LinkableBoolean(true); // print/export data table
 		
 		public const enableDataMenu:LinkableBoolean = new LinkableBoolean(true); // enable/disable Data Menu
 		public const enableRefreshHierarchies:LinkableBoolean = new LinkableBoolean(true);
@@ -221,7 +320,7 @@ package weave
 		public const enableAddWeaveDataSource:LinkableBoolean = new LinkableBoolean(true); // enable/disable Add WeaveDataSource option
 		
 		public const enableWindowMenu:LinkableBoolean = new LinkableBoolean(true); // enable/disable Window Menu
-		public const enableGoFullscreen:LinkableBoolean = new LinkableBoolean(true); // enable/disable Fullscreen
+		public const enableFullScreen:LinkableBoolean = new LinkableBoolean(false); // enable/disable FullScreen option
 		public const enableCloseAllWindows:LinkableBoolean = new LinkableBoolean(true); // enable/disable Close All Windows
 		public const enableRestoreAllMinimizedWindows:LinkableBoolean = new LinkableBoolean(true); // enable/disable Restore All Minimized Windows 
 		public const enableMinimizeAllWindows:LinkableBoolean = new LinkableBoolean(true); // enable/disable Minimize All Windows
@@ -247,11 +346,8 @@ package weave
 		public const dashboardMode:LinkableBoolean = new LinkableBoolean(false);	 // enable/disable borders/titleBar on windows
 		public const enableToolControls:LinkableBoolean = new LinkableBoolean(true); // enable tool controls (which enables attribute selector too)
 		
-		public const enableFullscreen:LinkableBoolean = new LinkableBoolean(true); // enable/disable going fullscreen from Window menu
-		
 		public const enableAboutMenu:LinkableBoolean = new LinkableBoolean(true); //enable/disable About Menu
 		
-		public function get enableDebugAlert():LinkableBoolean { return DebugUtils.enableDebugAlert; } // show debug_trace strings in alert boxes
 		public const showKeyTypeInColumnTitle:LinkableBoolean = new LinkableBoolean(false);
 		
 		// cosmetic options
@@ -305,6 +401,8 @@ package weave
 		public const panelTitleTextFormat:LinkableTextFormat = new LinkableTextFormat();
 		public function get defaultTextFormat():LinkableTextFormat { return LinkableTextFormat.defaultTextFormat; }
 		
+		public function get probeLineFormatter():LinkableFunction { return ProbeTextUtils.probeLineFormatter; }
+		
 		public const probeInnerGlowColor:LinkableNumber = new LinkableNumber(0xffffff, isFinite);
 		public const probeInnerGlowAlpha:LinkableNumber = new LinkableNumber(1, verifyAlpha);
 		public const probeInnerGlowBlur:LinkableNumber = new LinkableNumber(5);
@@ -337,7 +435,6 @@ package weave
 		
 		// temporary?
 		public const rServiceURL:LinkableString = registerLinkableChild(this, new LinkableString("/WeaveServices/RService"), handleRServiceURLChange);// url of Weave R service using Rserve
-		public const jriServiceURL:LinkableString = new LinkableString("/WeaveServices/JRIService");// url of Weave R service using JRI
 		public const pdbServiceURL:LinkableString = new LinkableString("/WeavePDBService/PDBService");
 		
 		private function handleRServiceURLChange():void
@@ -408,6 +505,10 @@ package weave
 		{
 			return value >= 1 && value <= 4;
 		}
+		
+		public function get SecondaryKeyNumColumn_useGlobalMinMaxValues():LinkableBoolean { return SecondaryKeyNumColumn.useGlobalMinMaxValues; }
+		public const enableThreadPriorities:LinkableBoolean = new LinkableBoolean(false);
+		public const maxComputationTimePerFrame:LinkableNumber = new LinkableNumber(100);
 
 		//--------------------------------------------
 		// BACKWARDS COMPATIBILITY

@@ -38,6 +38,7 @@ package weave.data.AttributeColumns
 	import weave.compiler.ICompiledObject;
 	import weave.compiler.ProxyObject;
 	import weave.compiler.StandardLib;
+	import weave.core.LinkableFunction;
 	import weave.core.LinkableHashMap;
 	import weave.core.LinkableString;
 	import weave.core.UntypedLinkableVariable;
@@ -68,6 +69,9 @@ package weave.data.AttributeColumns
 
 		public function EquationColumn()
 		{
+			getCallbackCollection(LinkableFunction.macroLibraries).addImmediateCallback(this, equation.triggerCallbacks, false, true);
+			getCallbackCollection(LinkableFunction.macros).addImmediateCallback(this, equation.triggerCallbacks, false, true);
+			
 			setMetadata(AttributeColumnMetadata.TITLE, "Untitled Equation");
 			//setMetadata(AttributeColumnMetadata.DATA_TYPE, DataTypes.NUMBER);
 			equation.value = 'undefined';
@@ -108,20 +112,23 @@ package weave.data.AttributeColumns
 		 */		
 		private var _lastError:String;
 		/**
-		 * This is true while code inside getValueFromKey is executing.
-		 */		
-		private var in_getValueFromKey:Boolean = false;
-		/**
 		 * This is a mapping from keys to cached data values.
 		 */
 		private var _equationResultCache:Dictionary = new Dictionary();
+		/**
+		 * This is used to determine when to clear the cache.
+		 */		
 		private var _cacheTriggerCount:uint = 0;
+		/**
+		 * This is used as a placeholder in _equationResultCache.
+		 */		
+		private static const UNDEFINED:Object = {};
 		
 		
 		/**
 		 * This is the equation that will be used in getValueFromKey().
 		 */
-		public const equation:LinkableString = newLinkableChild(this, LinkableString, handleEquationChange);
+		public const equation:LinkableString = newLinkableChild(this, LinkableString);
 		/**
 		 * This is a list of named variables made available to the compiled equation.
 		 */
@@ -232,45 +239,6 @@ package weave.data.AttributeColumns
 		}
 
 		/**
-		 * This function gets called when the equation changes.
-		 */
-		private function handleEquationChange():void
-		{
-			//trace(equation.value, "handleEquationChange");
-			// clear the cached data
-			_equationResultCache = null;
-
-			//todo: error checking?
-
-			try
-			{
-				// set default values in case an error is thrown
-				compiledEquation = null;
-				_equationIsConstant = true;
-				_constantResult = undefined;
-				
-				// check if the equation evaluates to a constant
-				var compiledObject:ICompiledObject = compiler.compileToObject(equation.value);
-				if (compiledObject is CompiledConstant)
-				{
-					// save the constant result of the function
-					_equationIsConstant = true;
-					_constantResult = (compiledObject as CompiledConstant).value;
-				}
-				else
-				{
-					// compile into a function
-					compiledEquation = compiler.compileObjectToFunction(compiledObject, _symbolTableProxy, true, false, ['key', 'dataType']);
-					_equationIsConstant = false;
-				}
-			}
-			catch (e:Error)
-			{
-				// It will not hurt anything if this fails.
-			}
-		}
-
-		/**
 		 * @return The keys associated with this EquationColumn.
 		 */
 		override public function get keys():Array
@@ -278,10 +246,12 @@ package weave.data.AttributeColumns
 			// return all the keys of all columns in the variables list
 			if (_allKeysTriggerCount != variables.triggerCounter)
 			{
+				_allKeys = null;
+				_allKeysTriggerCount = variables.triggerCounter; // prevent infinite recursion
+				
 				_allKeys = ColumnUtils.getAllKeys(variables.getObjects(IAttributeColumn));
-				_allKeysTriggerCount = variables.triggerCounter;
 			}
-			return _allKeys;
+			return _allKeys || [];
 		}
 
 		/**
@@ -297,16 +267,18 @@ package weave.data.AttributeColumns
 		{
 			if (name == 'get')
 				return variables.getObject as Function;
-			return variables.getObject(name) || undefined;
+			return variables.getObject(name)
+				|| LinkableFunction.evaluateMacro(name)
+				|| undefined;
 		}
 		
 		private function hasVariable(name:String):Boolean
 		{
 			if (name == 'get')
 				return true;
-			return variables.getObject(name) != null;
+			return variables.getObject(name) != null
+				|| LinkableFunction.macros.getObject(name) != null;
 		}
-		
 		
 		/**
 		 * @return The result of the compiled equation evaluated at the given record key.
@@ -314,28 +286,48 @@ package weave.data.AttributeColumns
 		 */
 		override public function getValueFromKey(key:IQualifiedKey, dataType:Class = null):*
 		{
-			if (in_getValueFromKey && EquationColumnLib.currentRecordKey == key)
-				return undefined;
-			
-			var value:*;
-			if (_equationIsConstant)
+			// reset cached values if necessary
+			if (_cacheTriggerCount != triggerCounter)
 			{
-				// if the equation evaluated to a constant, just use the constant value
-				value = _constantResult;
-			}
-			else
-			{
-				// otherwise, use cached equation results
-				if (_cacheTriggerCount != variables.triggerCounter)
+				_cacheTriggerCount = triggerCounter;
+				try
 				{
-					_equationResultCache = new Dictionary();
-					_cacheTriggerCount = variables.triggerCounter;
+					// check if the equation evaluates to a constant
+					var compiledObject:ICompiledObject = compiler.compileToObject(equation.value);
+					if (compiledObject is CompiledConstant)
+					{
+						// save the constant result of the function
+						_equationIsConstant = true;
+						_equationResultCache = null; // we don't need a cache
+						_constantResult = (compiledObject as CompiledConstant).value;
+					}
+					else
+					{
+						// compile into a function
+						compiledEquation = compiler.compileObjectToFunction(compiledObject, _symbolTableProxy, true, false, ['key', 'dataType']);
+						_equationIsConstant = false;
+						_equationResultCache = new Dictionary(); // create a new cache
+						_constantResult = undefined;
+					}
 				}
-				value = _equationResultCache[key];
-				// if the data value was not cached for this key yet, cache it now.
-				if (value == undefined)
+				catch (e:Error)
 				{
-					in_getValueFromKey = true; // prevent recursion caused by compiledEquation
+					// if compiling fails
+					_equationIsConstant = true;
+					_constantResult = undefined;
+				}
+			}
+			
+			var value:* = _constantResult;
+			if (!_equationIsConstant)
+			{
+				// check the cache
+				value = _equationResultCache[key];
+				// define cached value if missing
+				if (value === undefined)
+				{
+					// prevent recursion caused by compiledEquation
+					_equationResultCache[key] = UNDEFINED;
 					
 					// prepare EquationColumnLib static parameter before calling the compiled equation
 					EquationColumnLib.currentRecordKey = key;
@@ -352,11 +344,14 @@ package weave.data.AttributeColumns
 						}
 						//value = e;
 					}
-					if (_equationResultCache)
-						_equationResultCache[key] = value;
-					//trace('('+equation.value+')@"'+key+'" = '+value);
 					
-					in_getValueFromKey = false; // prevent recursion caused by compiledEquation
+					// save value in cache
+					_equationResultCache[key] = value;
+					//trace('('+equation.value+')@"'+key+'" = '+value);
+				}
+				else if (value === UNDEFINED)
+				{
+					value = undefined;
 				}
 			}
 			

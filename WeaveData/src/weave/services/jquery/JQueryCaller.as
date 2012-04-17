@@ -20,7 +20,6 @@ package weave.services.jquery
 {
 	import flash.events.SecurityErrorEvent;
 	import flash.external.ExternalInterface;
-	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
 	
 	import mx.core.mx_internal;
@@ -29,27 +28,22 @@ package weave.services.jquery
 	import mx.rpc.events.FaultEvent;
 	import mx.rpc.events.ResultEvent;
 	import mx.utils.Base64Decoder;
-	import mx.utils.ObjectUtil;
 	import mx.utils.UIDUtil;
 	
-	import weave.api.WeaveAPI;
 	import weave.api.reportError;
-	import weave.core.ErrorManager;
-	import weave.utils.ByteArrayUtils;
 
 	public class JQueryCaller
 	{
 		[Embed("jquery-caller.js", mimeType="application/octet-stream")]
 		private static const JQCaller:Class;
-		[Embed("jquery-1.5.2.js", mimeType="application/octet-stream")]
+		[Embed("jquery-1.7.1.min.js", mimeType="application/octet-stream")]
 		private static const JQ:Class;
 		
 		/**
-		 * uniqueIDToTokenMap
 		 * This maps a unique ID (generated when a request is made to download from a URL through this class)
-		 * to an AsyncToken associated with it.
+		 * to a QueryToken associated with it.
 		 */
-		private static const uniqueIDToTokenMap:Dictionary = new Dictionary(true);
+		private static const uniqueIDToTokenMap:Object = new Object();
 		
 		private static var _initialized:Boolean = false;
 		
@@ -86,33 +80,44 @@ package weave.services.jquery
 			initialize();
 				
 			var uniqueID:String = UIDUtil.createUID();
-			uniqueIDToTokenMap[uniqueID] = token;
+			uniqueIDToTokenMap[uniqueID] = new QueryToken(url, token);
 			
 			ExternalInterface.call("WeaveJQueryCaller.getFile('"+url+"', '"+uniqueID+"')");
-			
 		}
 		
 		public static function jqueryResult(id:String, data:Object):void
 		{
 			trace("RESULT!", data);
-			var token:AsyncToken = uniqueIDToTokenMap[id] as AsyncToken;
+			var qt:QueryToken = uniqueIDToTokenMap[id] as QueryToken;
 
-			token.mx_internal::applyResult(ResultEvent.createEvent(data, token));
+			qt.asyncToken.mx_internal::applyResult(ResultEvent.createEvent(data, qt.asyncToken));
 			
 			delete uniqueIDToTokenMap[id];
 		}
 		
-		public static function jqueryFault(id:String, url:String):void
+		public static function jqueryFault(id:String, errorThrown:Object):void
 		{
-			var token:AsyncToken = uniqueIDToTokenMap[id] as AsyncToken;
+			var qt:QueryToken = uniqueIDToTokenMap[id] as QueryToken;
 			
 			var fault:Fault = new Fault(SecurityErrorEvent.SECURITY_ERROR, SecurityErrorEvent.SECURITY_ERROR, "JQuery failed to download from url.");
-			token.mx_internal::applyFault(FaultEvent.createEvent(fault, token));
-			trace("FAULT! getting " + url);
+			fault.rootCause = errorThrown;
+			qt.asyncToken.mx_internal::applyFault(FaultEvent.createEvent(fault, qt.asyncToken));
+			trace("FAULT! getting " + qt.url);
 			
 			delete uniqueIDToTokenMap[id];
 		}
-
-		private static const staticDecoder:Base64Decoder = new Base64Decoder();
 	}
+}
+import mx.rpc.AsyncToken;
+
+internal class QueryToken
+{
+	public function QueryToken(url:String, asyncToken:AsyncToken)
+	{
+		this.url = url;
+		this.asyncToken = asyncToken;
+	}
+	
+	public var url:String;
+	public var asyncToken:AsyncToken;
 }

@@ -26,51 +26,32 @@ package weave.visualization.plotters
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
-	import flash.net.URLRequest;
 	import flash.utils.Dictionary;
-	
-	import mx.controls.Image;
-	import mx.graphics.ImageSnapshot;
-	import mx.rpc.events.FaultEvent;
-	import mx.rpc.events.ResultEvent;
-	import mx.utils.ObjectUtil;
 	
 	import weave.Weave;
 	import weave.api.WeaveAPI;
-	import weave.api.copySessionState;
+	import weave.api.core.ILinkableHashMap;
 	import weave.api.data.IAttributeColumn;
 	import weave.api.data.IColumnWrapper;
 	import weave.api.data.IQualifiedKey;
 	import weave.api.disposeObjects;
-	import weave.api.getCallbackCollection;
-	import weave.api.linkBindableProperty;
 	import weave.api.linkSessionState;
 	import weave.api.newLinkableChild;
+	import weave.api.objectWasDisposed;
 	import weave.api.primitives.IBounds2D;
 	import weave.api.registerLinkableChild;
 	import weave.api.setSessionState;
+	import weave.api.ui.IPlotter;
 	import weave.api.ui.IPlotterWithGeometries;
-	import weave.core.LinkableBoolean;
+	import weave.core.LinkableHashMap;
 	import weave.core.LinkableNumber;
-	import weave.core.LinkableString;
-	import weave.core.StageUtils;
-	import weave.data.AttributeColumns.AlwaysDefinedColumn;
-	import weave.data.AttributeColumns.ColorColumn;
-	import weave.data.AttributeColumns.DynamicColumn;
 	import weave.data.AttributeColumns.ImageColumn;
 	import weave.data.AttributeColumns.ReprojectedGeometryColumn;
 	import weave.data.AttributeColumns.StreamedGeometryColumn;
-	import weave.data.AttributeColumns.StringColumn;
-	import weave.primitives.BLGNode;
 	import weave.primitives.GeneralizedGeometry;
 	import weave.utils.PlotterUtils;
-	import weave.visualization.plotters.styles.DynamicFillStyle;
-	import weave.visualization.plotters.styles.DynamicLineStyle;
 	import weave.visualization.plotters.styles.ExtendedFillStyle;
 	import weave.visualization.plotters.styles.ExtendedLineStyle;
-	import weave.visualization.plotters.styles.SolidFillStyle;
-	import weave.visualization.plotters.styles.SolidLineStyle;
-	import weave.visualization.tools.MapTool;
 	
 	/**
 	 * GeometryPlotter
@@ -83,7 +64,7 @@ package weave.visualization.plotters
 		{
 			// initialize default line & fill styles
 			line.scaleMode.defaultValue.setSessionState(LineScaleMode.NONE);
-			fill.color.internalDynamicColumn.requestGlobalObject(Weave.DEFAULT_COLOR_COLUMN, ColorColumn, false);
+			fill.color.internalDynamicColumn.globalName = Weave.DEFAULT_COLOR_COLUMN;
 
 			line.weight.addImmediateCallback(this, disposeCachedBitmaps);
 			
@@ -95,6 +76,8 @@ package weave.visualization.plotters
 			geometryColumn.boundingBoxCallbacks.addImmediateCallback(this, spatialCallbacks.triggerCallbacks); // bounding box should trigger spatial
 			registerSpatialProperty(_filteredKeySet.keyFilter); // subset should trigger spatial callbacks
 		}
+		
+		public const symbolPlotters:ILinkableHashMap = registerLinkableChild(this, new LinkableHashMap(IPlotter));
 
 		/**
 		 * This is the reprojected geometry column to draw.
@@ -260,7 +243,15 @@ package weave.visualization.plotters
 				// draw graphics on cached bitmap
 				var g:Graphics = tempShape.graphics;
 				g.clear();
-				fill.beginFillStyle(null, g);
+				if (isNaN(color))
+				{
+					if (fill.enableMissingDataGradient.value)
+						fill.beginFillStyle(null, g);
+				}
+				else if (fill.enabled.defaultValue.value)
+				{
+					g.beginFill(color, fill.alpha.getValueFromKey(null, Number));
+				}
 				line.beginLineStyle(null, g);
 				g.drawCircle(pointOffset, pointOffset, pointShapeSize.value);
 				g.endFill();
@@ -278,9 +269,23 @@ package weave.visualization.plotters
 		
 		public const pixellation:LinkableNumber = registerLinkableChild(this, new LinkableNumber(1));
 		
+		private const _destinationToPlotTaskMap:Dictionary = new Dictionary(true);
+		
 		override public function drawPlot(recordKeys:Array, dataBounds:IBounds2D, screenBounds:IBounds2D, destination:BitmapData):void
 		{
-			var minImportance:Number = getDataAreaPerPixel(dataBounds, screenBounds) * pixellation.value;
+			var task:PlotTask = _destinationToPlotTaskMap[destination] as PlotTask;
+			if (!task)
+			{
+				_destinationToPlotTaskMap[destination] = task = new PlotTask(destination);
+				task.iterate = generateTaskIterator(task);
+			}
+			
+			task.recordKeys = recordKeys;
+			task.dataBounds = dataBounds;
+			task.screenBounds = screenBounds;
+			
+			task.recIndex = 0;
+			task.minImportance = getDataAreaPerPixel(dataBounds, screenBounds) * pixellation.value;
 			
 			// find nested StreamedGeometryColumn objects
 			var descendants:Array = WeaveAPI.SessionManager.getLinkableDescendants(geometryColumn, StreamedGeometryColumn);
@@ -288,7 +293,7 @@ package weave.visualization.plotters
 			for each (var streamedColumn:StreamedGeometryColumn in descendants)
 			{
 				var requestedDataBounds:IBounds2D = dataBounds;
-				var requestedMinImportance:Number = minImportance;
+				var requestedMinImportance:Number = task.minImportance;
 				if (requestedDataBounds.isUndefined())// if data bounds is empty
 				{
 					// use the collective bounds from the geometry column and re-calculate the min importance
@@ -300,43 +305,88 @@ package weave.visualization.plotters
 					streamedColumn.requestGeometryDetail(requestedDataBounds, requestedMinImportance);
 			}
 			
-			var graphics:Graphics = tempShape.graphics;
-			graphics.clear();
-			// loop through the records and draw the geometries
-			for (var recIndex:int = 0; recIndex < recordKeys.length; recIndex++)
+			WeaveAPI.StageUtils.startTask(this, task.iterate, WeaveAPI.TASK_PRIORITY_RENDERING);
+		}
+		
+		private const _singleGeom:Array = []; // reusable array for holding one item
+		
+		private function generateTaskIterator(task:PlotTask):Function
+		{
+			return function():Number
 			{
-				var recordKey:IQualifiedKey = recordKeys[recIndex] as IQualifiedKey;
-				var geoms:Array;
-				
-				var value:* = geometryColumn.getValueFromKey(recordKey);
-				if (value is Array)
-					geoms = value;
-				else if (value is GeneralizedGeometry)
-					geoms = [value as GeneralizedGeometry];
-				else	
-					continue;
-				if (geoms.length == 0)
-					continue;
-				
-				fill.beginFillStyle(recordKey, graphics);
-				line.beginLineStyle(recordKey, graphics);
-	
-				// draw the geom
-				for (var i:int = 0; i < geoms.length; i++)
+				// loop through the records and draw the geometries
+				var progress:Number = 1;
+				if (task.recIndex < task.recordKeys.length)
 				{
-					var geom:GeneralizedGeometry = geoms[i] as GeneralizedGeometry;
-					if (geom)
+					var recordKey:IQualifiedKey = task.recordKeys[task.recIndex] as IQualifiedKey;
+					var geoms:Array = null;
+					var value:* = geometryColumn.getValueFromKey(recordKey);
+					if (value is Array)
+						geoms = value;
+					else if (value is GeneralizedGeometry)
 					{
-						// skip shapes that are considered unimportant at this zoom level
-						if (geom.geomType == GeneralizedGeometry.GEOM_TYPE_POLYGON && geom.bounds.getArea() < minImportance)
-							continue;
-						drawMultiPartShape(recordKey, geom.getSimplifiedGeometry(minImportance, dataBounds), geom.geomType, dataBounds, screenBounds, graphics, destination);
+						geoms = _singleGeom;
+						_singleGeom[0] = value;
 					}
+					
+					if (geoms && geoms.length > 0)
+					{
+						var graphics:Graphics = tempShape.graphics;
+						var styleSet:Boolean = false;
+						
+						// draw the geom
+						for (var i:int = 0; i < geoms.length; i++)
+						{
+							var geom:GeneralizedGeometry = geoms[i] as GeneralizedGeometry;
+							if (geom)
+							{
+								// skip shapes that are considered unimportant at this zoom level
+								if (geom.geomType == GeneralizedGeometry.GEOM_TYPE_POLYGON && geom.bounds.getArea() < task.minImportance)
+									continue;
+								if (!styleSet)
+								{
+									graphics.clear();
+									fill.beginFillStyle(recordKey, graphics);
+									line.beginLineStyle(recordKey, graphics);
+									styleSet = true;
+								}
+								drawMultiPartShape(recordKey, geom.getSimplifiedGeometry(task.minImportance, task.dataBounds), geom.geomType, task.dataBounds, task.screenBounds, graphics, task.destination);
+							}
+						}
+						try
+						{
+							if (styleSet)
+							{
+								graphics.endFill();
+								task.destination.draw(tempShape);
+							}
+						}
+						catch (e:Error)
+						{
+							// bitmap was disposed of.
+							disposeObjects(task.destination);
+						}
+					}
+					task.recIndex++;
+					progress = task.recIndex / task.recordKeys.length;
 				}
-				graphics.endFill();
-			}
-			
-			destination.draw(tempShape);
+				
+				// Remove this task when the bitmap gets disposed of.
+				// This depends on someone else calling disposeObjects() on the BitmapData.
+				if (objectWasDisposed(task.destination))
+				{
+					delete _destinationToPlotTaskMap[task.destination];
+					return 1;
+				}
+				
+				if (progress == 1)
+				{
+					for each (var plotter:IPlotter in symbolPlotters.getObjects())
+						plotter.drawPlot(task.recordKeys, task.dataBounds, task.screenBounds, task.destination);
+				}
+				
+				return progress;
+			};
 		}
 		
 		private static const tempPoint:Point = new Point(); // reusable object
@@ -435,4 +485,20 @@ package weave.visualization.plotters
 			setSessionState(geometryColumn.internalDynamicColumn, value);
 		}
 	}
+}
+import flash.display.BitmapData;
+
+import weave.api.primitives.IBounds2D;
+
+internal class PlotTask
+{
+	public function PlotTask(destination:BitmapData)
+	{
+		this.destination = destination;
+	}
+	
+	public var destination:BitmapData;
+	public var recordKeys:Array, dataBounds:IBounds2D, screenBounds:IBounds2D;
+	public var recIndex:int, minImportance:Number;
+	public var iterate:Function;
 }

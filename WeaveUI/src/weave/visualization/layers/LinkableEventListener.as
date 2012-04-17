@@ -22,24 +22,22 @@ package weave.visualization.layers
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	
-	import weave.api.core.IDisposableObject;
+	import weave.api.WeaveAPI;
 	import weave.api.core.ILinkableHashMap;
 	import weave.api.core.ILinkableObject;
 	import weave.api.getLinkableRoot;
 	import weave.api.registerLinkableChild;
 	import weave.api.reportError;
-	import weave.core.CallbackCollection;
 	import weave.core.LinkableFunction;
 	import weave.core.LinkableString;
-	import weave.core.StageUtils;
 
 	/**
-	 * A LinkableEventListener is a sessioned eventLinster which is added to the stage. The action is specified by
+	 * A LinkableEventListener is a sessioned event listener which is added to the stage. The event type is specified by
 	 * <code>event.value</code> and the listener function specified by the LinkableFunction <code>script.value</code>.
 	 * 
 	 * @author kmonico
 	 */	
-	public class LinkableEventListener extends CallbackCollection implements ILinkableObject, IDisposableObject
+	public class LinkableEventListener implements ILinkableObject
 	{
 		public function LinkableEventListener()
 		{
@@ -75,7 +73,7 @@ package weave.visualization.layers
 				try
 				{
 					var thisPointer:* = null;
-					var stageEvent:Event = StageUtils.event;
+					var stageEvent:Event = WeaveAPI.StageUtils.event;
 					
 					// if a target is specified, check that the event occurred on the target
 					if (target.value)
@@ -110,10 +108,10 @@ package weave.visualization.layers
 			
 			// If there was an event listener added, we need to remove it now
 			if (_lastFunction != null && _lastEvent != null)
-				StageUtils.removeEventCallback(_lastEvent, _lastFunction);
+				WeaveAPI.StageUtils.removeEventCallback(_lastEvent, _lastFunction);
 			
 			// Always add the new event and save the event and function
-			StageUtils.addEventCallback(event.value, this, func);
+			WeaveAPI.StageUtils.addEventCallback(event.value, this, func);
 			_lastEvent = event.value;
 			_lastFunction = func;
 		}
@@ -123,7 +121,7 @@ package weave.visualization.layers
 		{
 			// This function is called before the member initializer for supportedEvents
 			if (!supportedEvents)
-				supportedEvents = StageUtils.getSupportedEventTypes();
+				supportedEvents = WeaveAPI.StageUtils.getSupportedEventTypes();
 			
 			for each (var event:String in supportedEvents)
 			{

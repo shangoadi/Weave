@@ -31,6 +31,7 @@
 	</target>
 
 	<target name="compile">
+		<echo message="Compiling ${ant.project.name}..."/>
 		<mkdir dir="${OUTPUT_DIR}"/>
 		<compc 
 			output="${OUTPUT_DIR}/WeaveAPI.swc"
@@ -52,6 +53,8 @@
 			<external-library-path file="${FLEX_HOME}/frameworks/libs/player/10/playerglobal.swc" append="true"/>
 			<external-library-path file="${FLEX_HOME}/frameworks/libs/framework.swc" append="true"/>
 			<external-library-path file="${FLEX_HOME}/frameworks/libs/rpc.swc" append="true"/>
+
+			<library-path dir="${PROJECT_DIR}/libs" includes="*.swc" append="true"/>
 
 		</compc>
 	</target>

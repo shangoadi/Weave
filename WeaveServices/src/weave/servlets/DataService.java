@@ -25,6 +25,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,20 +38,22 @@ import weave.beans.DataServiceMetadata;
 import weave.beans.DataTableMetadata;
 import weave.beans.GeometryStreamMetadata;
 import weave.beans.WeaveRecordList;
+import weave.config.DublinCoreUtils;
+import weave.config.ISQLConfig;
+import weave.config.ISQLConfig.AttributeColumnInfo;
+import weave.config.ISQLConfig.AttributeColumnInfo.DataType;
+import weave.config.ISQLConfig.AttributeColumnInfo.Metadata;
+import weave.config.ISQLConfig.ConnectionInfo;
+import weave.config.ISQLConfig.DatabaseConfigInfo;
+import weave.config.ISQLConfig.GeometryCollectionInfo;
+import weave.config.SQLConfigManager;
+import weave.config.SQLConfigUtils;
+import weave.geometrystream.SQLGeometryStreamReader;
 import weave.reports.WeaveReport;
-import weave.servlets.GenericServlet;
 import weave.utils.CSVParser;
 import weave.utils.DebugTimer;
 import weave.utils.ListUtils;
 import weave.utils.SQLResult;
-import weave.config.ISQLConfig;
-import weave.config.SQLConfigManager;
-import weave.config.SQLConfigUtils;
-import weave.config.ISQLConfig.AttributeColumnInfo;
-import weave.config.ISQLConfig.GeometryCollectionInfo;
-import weave.config.ISQLConfig.AttributeColumnInfo.DataType;
-import weave.config.ISQLConfig.AttributeColumnInfo.Metadata;
-import weave.geometrystream.SQLGeometryStreamReader;
 
 /**
  * This class connects to a database and gets data
@@ -86,14 +89,27 @@ public class DataService extends GenericServlet
 		throws RemoteException
 	{
 		configManager.detectConfigChanges();
-		// encoding method is set to null here because we don't know what format it will be converted to later
+		
 		ISQLConfig config = configManager.getConfig();
 		String[] tableNames = config.getDataTableNames(null).toArray(new String[0]);
 		String[] geomNames = config.getGeometryCollectionNames(null).toArray(new String[0]);
 		String[] geomKeyTypes = new String[geomNames.length];
 		for (int i = 0; i < geomNames.length; i++)
 			geomKeyTypes[i] = config.getGeometryCollectionInfo(geomNames[i]).keyType;
-		return new DataServiceMetadata(config.getServerName(), tableNames, geomNames, geomKeyTypes);
+		
+		@SuppressWarnings("unchecked")
+		Map<String,String>[] tableMetadata = new Map[tableNames.length];
+		// get dublin core metadata
+		DatabaseConfigInfo configInfo = config.getDatabaseConfigInfo();
+		ConnectionInfo connInfo = config.getConnectionInfo(configInfo.connection);
+		Connection conn = connInfo.getStaticReadOnlyConnection();
+		for (int i = 0; i < tableNames.length; i++)
+		{
+			tableMetadata[i] = DublinCoreUtils.listDCElements(conn, configInfo.schema, tableNames[i]);
+			tableMetadata[i].put(ISQLConfig.AttributeColumnInfo.Metadata.NAME.toString(), tableNames[i]);
+		}
+		
+		return new DataServiceMetadata(config.getServerName(), tableMetadata, geomNames, geomKeyTypes);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -140,9 +156,8 @@ public class DataService extends GenericServlet
 		params.put(AttributeColumnInfo.Metadata.KEYTYPE.toString(),keyType);
 		
 		HashMap<String,Integer> keyMap = new HashMap<String,Integer>();
-		for(int keyIndex =0; keyIndex < keysArray.length; keyIndex ++ ){
+		for (int keyIndex = 0; keyIndex < keysArray.length; keyIndex++)
 			keyMap.put( keysArray[keyIndex],keyIndex);
-		}
 		
 		int rowIndex =0;
 		configManager.detectConfigChanges();
@@ -156,9 +171,11 @@ public class DataService extends GenericServlet
 		Object recordData[][] =  new Object[keys.size()][infoList.size()];
 		
 		Map<String,String> metadataList[] = new Map[infoList.size()];
-		for (int colIndex = 0; colIndex < infoList.size(); colIndex++){
+		for (int colIndex = 0; colIndex < infoList.size(); colIndex++)
+		{
 			AttributeColumnInfo info = infoList.get(colIndex);
-			String dataWithKeysQuery = info.sqlQuery;
+			String sqlQuery = info.sqlQuery;
+			String sqlParams = info.sqlParams;
 			metadataList[colIndex] = info.metadata;
 
 			//if (dataWithKeysQuery.length() == 0)
@@ -166,9 +183,7 @@ public class DataService extends GenericServlet
 			
 			List<Double> numericData = null;
 			List<String> stringData = null;
-			List<String> secKeys = new ArrayList<String>();
 			String dataType = info.getMetadata(Metadata.DATATYPE.toString());
-			boolean hasSecondaryKey = true;
 			
 			// use config min,max or param min,max to filter the data
 			String infoMinStr = info.getMetadata(Metadata.MIN.toString());
@@ -193,7 +208,17 @@ public class DataService extends GenericServlet
 			try
 			{
 				//timer.start();
-				SQLResult result = SQLConfigUtils.getRowSetFromQuery(config, info.connection, dataWithKeysQuery);
+				
+				SQLResult result;
+				if (sqlParams != null && sqlParams.length() > 0)
+				{
+					String[] sqlParamsArray = CSVParser.defaultParser.parseCSV(sqlParams)[0];
+					result = SQLConfigUtils.getRowSetFromQuery(config, info.connection, sqlQuery, sqlParamsArray);
+				}
+				else
+				{
+					result = SQLConfigUtils.getRowSetFromQuery(config, info.connection, sqlQuery);
+				}
 				//timer.lap("get row set");
 				// if dataType is defined in the config file, use that value.
 				// otherwise, derive it from the sql result.
@@ -207,10 +232,11 @@ public class DataService extends GenericServlet
 				Object keyObj, dataObj;
 				double value;
 				
-				for( int i = 0; i < result.rows.length; i++)
+				for (int i = 0; i < result.rows.length; i++)
 				{
 					keyObj = result.rows[i][0];
-					if(keyMap.get(keyObj)!= null){
+					if (keyMap.get(keyObj) != null)
+					{
 						rowIndex = keyMap.get(keyObj);
 						if (keyObj == null)
 							continue;
@@ -243,10 +269,8 @@ public class DataService extends GenericServlet
 								continue;
 							
 							stringData.add(dataObj.toString());
-							recordData[rowIndex][colIndex] =  dataObj;
+							recordData[rowIndex][colIndex] = dataObj;
 						}
-						if (hasSecondaryKey)
-							hasSecondaryKey = getSecKeys(result, secKeys, i);
 					}
 				}
 				//timer.lap("get rows");
@@ -254,14 +278,12 @@ public class DataService extends GenericServlet
 			catch (SQLException e)
 			{
 				e.printStackTrace();
-				
 			}
 			catch (NullPointerException e)
 			{
 				e.printStackTrace();
-				throw(new RemoteException(e.getMessage()));
+				throw new RemoteException(e.getMessage());
 			}
-			
 		}
 		
 		WeaveRecordList result = new WeaveRecordList();
@@ -312,9 +334,8 @@ public class DataService extends GenericServlet
 		List<String> keys = new ArrayList<String>();
 		List<Double> numericData = null;
 		List<String> stringData = null;
-		List<String> secKeys = new ArrayList<String>();
+		List<Object> thirdColumn = null;
 		String dataType = info.getMetadata(Metadata.DATATYPE.toString());
-		boolean hasSecondaryKey = true;
 		
 		// use config min,max or param min,max to filter the data
 		double minValue = Double.NEGATIVE_INFINITY;
@@ -342,6 +363,10 @@ public class DataService extends GenericServlet
 		{
 			timer.start();
 			SQLResult result;
+			// use default sqlParams if not specified by query params
+			if (sqlParams == null || sqlParams.length() == 0)
+				sqlParams = info.sqlParams;
+			
 			if (sqlParams != null && sqlParams.length() > 0)
 			{
 				String[] args = CSVParser.defaultParser.parseCSV(sqlParams)[0];
@@ -364,9 +389,13 @@ public class DataService extends GenericServlet
 			else // for every other dataType, use String
 				stringData = new ArrayList<String>();
 			
+			// hack for dimension slider
+			if (result.columnTypes.length == 3)
+				thirdColumn = new LinkedList<Object>();
+			
 			Object keyObj, dataObj;
 			double value;
-			for( int i = 0; i < result.rows.length; i++)
+			for (int i = 0; i < result.rows.length; i++)
 			{
 				keyObj = result.rows[i][0];
 				if (keyObj == null)
@@ -375,11 +404,13 @@ public class DataService extends GenericServlet
 				dataObj = result.rows[i][1];
 				if (dataObj == null)
 					continue;
-	
+				
 				if (numericData != null)
 				{
 					try
 					{
+						if (dataObj instanceof String)
+							dataObj = Double.parseDouble((String)dataObj);
 						value = ((Number)dataObj).doubleValue();
 					}
 					catch (Exception e)
@@ -398,8 +429,9 @@ public class DataService extends GenericServlet
 					stringData.add(dataObj.toString());
 				}
 				keys.add(keyObj.toString());
-				if (hasSecondaryKey)
-					hasSecondaryKey = getSecKeys(result, secKeys, i);
+				
+				if (thirdColumn != null)
+					thirdColumn.add(result.rows[i][2]);
 			}
 			timer.lap("get rows");
 		}
@@ -423,26 +455,11 @@ public class DataService extends GenericServlet
 				info.metadata,
 				keys.toArray(new String[0]),
 				numericData != null ? numericData.toArray(new Double[0]) : stringData.toArray(new String[0]),
-				hasSecondaryKey ? secKeys.toArray(new String[0]) : null
+				thirdColumn != null ? thirdColumn.toArray(new Object[0]) : null
 			);
 		timer.report("prepare result");
 		
 		return result;
-	}
-	
-	private boolean getSecKeys(SQLResult rowset, List<String> secKeys, int rownum)
-	{
-		try
-		{
-			Object secKeyValueObject = rowset.rows[rownum][2];
-			if (! secKeyValueObject.equals(null))
-				secKeys.add(secKeyValueObject.toString());	
-		}
-		catch (Exception e)
-		{
-			return false;
-		}
-		return true;
 	}
 	
 	public SQLResult getRowSetFromAttributeColumn(Map<String, String> params)

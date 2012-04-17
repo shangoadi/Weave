@@ -65,7 +65,7 @@ package weave.data.DataSources
 	{
 		public function WeaveDataSource()
 		{
-			url.addImmediateCallback(this, handleURLChange, null, true);
+			url.addImmediateCallback(this, handleURLChange, true);
 		}
 		
 		public function getRows(keys:Array):AsyncToken
@@ -235,22 +235,6 @@ package weave.data.DataSources
 				//trace("handleGetDataServiceMetadata",ObjectUtil.toString(event));
 				var result:DataServiceMetadata = new DataServiceMetadata(event.result);
 
-				// get sorted list of categories to create (for data tables and/or geometry collections)
-				var categoryNames:Array = [];
-				var hashMap:Object = {};
-				for each (var names:Array in [result.dataTableNames, result.geometryCollectionNames])
-				{
-					for each (var name:String in names)
-					{
-						if (!hashMap[name])
-						{
-							hashMap[name] = true;
-							categoryNames.push(name);
-						}
-					}
-				}
-				categoryNames.sort(Array.CASEINSENSITIVE);
-
 				if (_attributeHierarchy.value == null)
 					_attributeHierarchy.value = <hierarchy name={ result.serverName }/>;
 				
@@ -260,11 +244,16 @@ package weave.data.DataSources
 
 				parent = <category name="Data Tables"/>;
 				_attributeHierarchy.value.appendChild(parent);
-				for (i = 0; i < categoryNames.length; i++)
+				for (i = 0; i < result.dataTableMetadata.length; i++)
 				{
-					var categoryName:String = categoryNames[i];
-					if (parent.category.(@name == categoryName).length() == 0)
-						parent.appendChild(<category name={ categoryName }/>);
+					var metadata:Object = result.dataTableMetadata[i];
+					if (parent.category.(@name == metadata.name).length() == 0)
+					{
+						var tag:XML = <category/>;
+						for (var attrName:String in metadata)
+							tag['@'+attrName] = metadata[attrName];
+						parent.appendChild(tag);
+					}
 				}
 				
 				parent = <category name="Geometry Collections"/>;
@@ -452,10 +441,11 @@ package weave.data.DataSources
 				var dataType:String = hierarchyNode['@' + AttributeColumnMetadata.DATA_TYPE];
 
 				var keysVector:Vector.<IQualifiedKey> = Vector.<IQualifiedKey>(WeaveAPI.QKeyManager.getQKeys(keyType, result.keys));
-				if (result.secKeys != null)
+				if (result.thirdColumn != null)
 				{
+					// hack for dimension slider
 					var newColumn:SecondaryKeyNumColumn = new SecondaryKeyNumColumn(hierarchyNode);
-					var secKeyVector:Vector.<String> = Vector.<String>(result.secKeys);
+					var secKeyVector:Vector.<String> = Vector.<String>(result.thirdColumn);
 					newColumn.updateRecords(keysVector, secKeyVector, result.data);
 					proxyColumn.internalColumn = newColumn;
 					proxyColumn.setMetadata(null); // this will allow SecondaryKeyNumColumn to use its getMetadata() code

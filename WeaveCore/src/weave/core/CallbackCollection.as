@@ -79,12 +79,17 @@ package weave.core
 		private var _runCallbacksIsPending:Boolean = false;
 		
 		/**
+		 * This is the default value of triggerCounter.
+		 */		
+		protected const DEFAULT_TRIGGER_COUNT:uint = 1;
+		
+		/**
 		 * This value keeps track of how many times callbacks were triggered, and is returned by the public triggerCounter accessor function.
 		 * The value starts at 1 to simplify code that compares the counter to a previous value.
 		 * This allows the previous value to be set to zero so change will be detected the first time the counter is compared.
 		 * This fixes potential bugs where the base case of zero is not considered.
 		 */
-		private var _triggerCounter:uint = 1;
+		private var _triggerCounter:uint = DEFAULT_TRIGGER_COUNT;
 		
 		/**
 		 * If this is true, it means _runCallbacksImmediately() is currently executing.
@@ -92,16 +97,14 @@ package weave.core
 		private var _callbacksAreRunning:Boolean = false;
 		
 		/**
-		 * This function will add a callback using the given function and parameters.
-		 * Any callback previously added for the same function will be overwritten.
+		 * This adds the given function as a callback.  The function must not require any parameters.
 		 * The callback function will not be called recursively as a result of it triggering callbacks recursively.
 		 * @param relevantContext If this is not null, then the callback will be removed when the relevantContext object is disposed via SessionManager.dispose().  This parameter is typically a 'this' pointer.
 		 * @param callback The function to call when callbacks are triggered.
-		 * @param parameters An array of parameters that will be used as parameters to the callback function.
 		 * @param runCallbackNow If this is set to true, the callback will be run immediately after it is added.
 		 * @param alwaysCallLast If this is set to true, the callback will be always be called after any callbacks that were added with alwaysCallLast=false.  Use this to establish the desired child-to-parent triggering order.
 		 */
-		public final function addImmediateCallback(relevantContext:Object, callback:Function, parameters:Array = null, runCallbackNow:Boolean = false, alwaysCallLast:Boolean = false):void
+		public final function addImmediateCallback(relevantContext:Object, callback:Function, runCallbackNow:Boolean = false, alwaysCallLast:Boolean = false):void
 		{
 			if (callback == null)
 				return;
@@ -113,7 +116,6 @@ package weave.core
 			_callbackEntries.push(entry);
 			entry.context = relevantContext;
 			entry.callback = callback;
-			entry.parameters = parameters;
 			entry.recursionLimit = 0;
 			if (alwaysCallLast)
 				entry.schedule = 1;
@@ -126,7 +128,7 @@ package weave.core
 			{
 				// increase the recursion count while the function is running
 				entry.recursionCount++;
-				callback.apply(null, parameters);
+				callback();
 				entry.recursionCount--;
 			}
 		}
@@ -198,7 +200,6 @@ package weave.core
 						// help the garbage-collector a bit
 						entry.context = null;
 						entry.callback = null;
-						entry.parameters = null;
 						// remove the empty callback reference from the list
 						_callbackEntries.splice(i--, 1); // decrease i because remaining entries have shifted
 						continue;
@@ -210,7 +211,7 @@ package weave.core
 						if (_preCallback != null)
 							_preCallback.apply(null, preCallbackParams);
 						
-						entry.callback.apply(null, entry.parameters);
+						entry.callback();
 						
 						entry.recursionCount--; // decrease count because the callback finished.
 					}
@@ -243,7 +244,6 @@ package weave.core
 					// This is done instead of removing the entry because we may be looping over the _callbackEntries Array right now.
 					entry.context = null;
 					entry.callback = null;
-					entry.parameters = null;
 					if (debug)
 						entry.removeCallback_stackTrace = new Error("removeCallback called").getStackTrace();
 					// done removing the callback
@@ -359,7 +359,7 @@ package weave.core
 			{
 				// run grouped callbacks in the order they were triggered
 				var triggerEntry:CallbackEntry = _triggeredGroupedCallbackEntryOrderedList.shift() as CallbackEntry;
-				(triggerEntry as CallbackEntry).callback.apply();
+				(triggerEntry as CallbackEntry).callback();
 				delete _triggeredGroupedCallbackEntryMap[triggerEntry];
 			}
 
@@ -380,7 +380,7 @@ package weave.core
 		{
 			if (!_frameCallbackAdded)
 			{
-				StageUtils.addEventCallback(Event.ENTER_FRAME, null, _handleGroupedCallbacks);
+				WeaveAPI.StageUtils.addEventCallback(Event.ENTER_FRAME, null, _handleGroupedCallbacks);
 				_frameCallbackAdded = true;
 			}
 			
@@ -435,12 +435,12 @@ package weave.core
 							// increase recursion count while the function is running.
 							triggerEntry.recursionCount++;
 							
-							groupedCallback.apply();
+							groupedCallback();
 							
 							triggerEntry.recursionCount--;
 						}
 					}
-					else if (_triggeredGroupedCallbackEntryMap[triggerEntry] == undefined) // if not already triggered
+					else if (_triggeredGroupedCallbackEntryMap[triggerEntry] === undefined) // if not already triggered
 					{
 						// set a flag to signal that this grouped callback was triggered.
 						_triggeredGroupedCallbackEntryMap[triggerEntry] = true;
@@ -456,7 +456,7 @@ package weave.core
 			_runningGroupedCallbacksNow = false;
 			
 			// add the trigger function as a callback
-			addImmediateCallback(relevantContext, triggerEntry.callback, null, triggerCallbackNow);
+			addImmediateCallback(relevantContext, triggerEntry.callback, triggerCallbackNow);
 			
 			_runningGroupedCallbacksNow = _previouslyRunningGroupedCallbacks;
 		}
@@ -486,10 +486,6 @@ internal class CallbackEntry
 	 * This is the callback function.
 	 */
 	public var callback:Function = null;
-	/**
-	 * This is a list of parameters to pass to the callback function.
-	 */	
-	public var parameters:Array = null;
 	/**
 	 * This is the maximum recursion depth allowed for this callback.
 	 */	

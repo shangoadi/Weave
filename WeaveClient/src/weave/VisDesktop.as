@@ -21,20 +21,28 @@ package weave
 {
 	import mx.containers.Canvas;
 	
-	import weave.core.LinkableDynamicObject;
-	import weave.core.UIUtils;
+	import weave.api.WeaveAPI;
 	import weave.api.core.IDisposableObject;
 	import weave.api.core.ILinkableContainer;
 	import weave.api.core.ILinkableHashMap;
+	import weave.core.LinkableDynamicObject;
+	import weave.core.UIUtils;
 	
 	public class VisDesktop extends Canvas implements ILinkableContainer, IDisposableObject
 	{
 		public function VisDesktop()
 		{
+		}
+		
+		override protected function createChildren():void
+		{
+			super.createChildren();
+			
 			internalCanvas.percentWidth = 100;
 			internalCanvas.percentHeight = 100;
 			addChild(internalCanvas);
-			UIUtils.linkDisplayObjects(internalCanvas, LinkableDynamicObject.globalHashMap);
+			
+			UIUtils.linkDisplayObjects(internalCanvas, getLinkableChildren());
 		}
 		
 		private var _internalCanvas:Canvas = new Canvas();
@@ -56,12 +64,12 @@ package weave
 		
 		public function getLinkableChildren():ILinkableHashMap
 		{
-			return LinkableDynamicObject.globalHashMap;
+			return WeaveAPI.globalHashMap;
 		}
 		
 		public function dispose():void
 		{
-			UIUtils.unlinkDisplayObjects(internalCanvas, LinkableDynamicObject.globalHashMap);
+			UIUtils.unlinkDisplayObjects(internalCanvas, getLinkableChildren());
 			_internalCanvas = null;
 		}
 	}
