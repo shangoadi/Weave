@@ -95,6 +95,7 @@
 			import mx.binding.utils.BindingUtils;
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
 			import mx.events.ListEvent;
 			import mx.rpc.events.ResultEvent;
 			
@@ -192,7 +193,7 @@
 			
 			private function get hostUrl():String
 			{
-				var result:Array = mx.core.Application.application.url.split("http://");
+				var result:Array = FlexGlobals.topLevelApplication.url.split("http://");
 				var index:int = (result.length > 1) ? 1 : 0;
 				result = (result[index] as String).split("/");
 				return result[0] as String;

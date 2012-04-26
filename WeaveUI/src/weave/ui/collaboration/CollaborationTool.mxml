@@ -44,6 +44,7 @@
 			import mx.controls.Alert;
 			import mx.controls.ToolTip;
 			import mx.core.Application;
+			import mx.core.FlexGlobals;
 			import mx.core.IFlexDisplayObject;
 			import mx.events.CloseEvent;
 			import mx.events.ListEvent;
@@ -177,7 +178,7 @@
 			}
 			private function handleCreateUserMouse(e:CollaborationEvent):void
 			{
-				cursorList.addItem(CollabMouseCursor.addPopUp(Application.application as DisplayObject));
+				cursorList.addItem(CollabMouseCursor.addPopUp(FlexGlobals.topLevelApplication as DisplayObject));
 			}
 			
 			private var toolTipper:ToolTip = new ToolTip()
@@ -202,7 +203,7 @@
 			
 			protected function button1_clickHandler(event:MouseEvent):void
 			{
-				var cursor:IFlexDisplayObject = PopUpManager.createPopUp(Application.application as DisplayObject, CollabMouseCursor);
+				var cursor:IFlexDisplayObject = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as DisplayObject, CollabMouseCursor);
 				PopUpManager.centerPopUp(cursor);
 				stage.addEventListener(MouseEvent.MOUSE_MOVE, 
 					function(_:MouseEvent):void 

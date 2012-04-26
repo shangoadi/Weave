@@ -71,7 +71,7 @@
 		</mx:HBox>
 	</mx:VBox>
 	
-	<mx:VBox borderStyle="solid" horizontalAlign="middle" verticalGap="0" enabled="{!useImagesCheck.selected}"
+	<mx:VBox borderStyle="solid" horizontalAlign="center" verticalGap="0" enabled="{!useImagesCheck.selected}"
 			 paddingLeft="1" paddingBottom="1" paddingRight="1" paddingTop="1">
 		<mx:Label text="point size:"/>
 		<mx:NumericStepper 	id="pointSize" 
@@ -80,7 +80,7 @@
 							width="50"
 							creationComplete="linkBindableProperty(_plotter.pointShapeSize,event.target,'value')"/>
 	</mx:VBox>
-	<mx:VBox borderStyle="solid" horizontalAlign="middle" verticalGap="0"
+	<mx:VBox borderStyle="solid" horizontalAlign="center" verticalGap="0"
 			 paddingLeft="1" paddingBottom="1" paddingRight="1" paddingTop="1">
 		<mx:CheckBox id="useImagesCheck" label="Enable Images" click="handleGeomPlotterImageToggle()"/>
 		<mx:TextInput id="imageURL" creationComplete="EventUtils.addDelayedEventCallback(event.target, Event.CHANGE, handleGeomPlotterImageInput)" enabled="{useImagesCheck.selected}"/>

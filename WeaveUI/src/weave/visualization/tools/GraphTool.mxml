@@ -32,6 +32,7 @@
 	<mx:Script>
 		<![CDATA[
 			import mx.core.Application;
+			import mx.core.FlexGlobals;
 			
 			import weave.Weave;
 			import weave.api.WeaveAPI;
@@ -98,7 +99,7 @@
 				(edgeTargetComponent as DynamicColumnComponent).dynamicObject = edgeTargetColumn;
 				(edgeColorComponent as DynamicColumnComponent).dynamicObject = edgeColorColumn.internalDynamicColumn;
 								
-				this.contextMenu = (Application.application as Application).contextMenu;
+				this.contextMenu = (FlexGlobals.topLevelApplication as Application).contextMenu;
 //				CustomContextMenuManager.createAndAddMenuItemToDestination('Layout Graph', this, handleLayoutGraph_click);
 //				CustomContextMenuManager.createAndAddMenuItemToDestination('Scale Selection', this, handleScaleSelection_click);
 //				CustomContextMenuManager.createAndAddMenuItemToDestination('Reset Positions', this, handleResetPositions);

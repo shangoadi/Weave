@@ -44,6 +44,7 @@
 		<![CDATA[
 			import mx.containers.VBox;
 			import mx.core.Application;
+			import mx.core.FlexGlobals;
 			import mx.core.mx_internal;
 			import mx.utils.ObjectUtil;
 			import mx.utils.StringUtil;
@@ -143,8 +144,8 @@
 						ExternalInterface.marshallExceptions = prev;
 					}
 				},
-				'application': Application.application,
-				'visApp': Application.application.visApp,
+				'application': FlexGlobals.topLevelApplication,
+				'visApp': FlexGlobals.topLevelApplication.visApp,
 				'print': ObjectUtil.toString as Function,
 				'getObject': getObject,
 				'clear': consoleClear,

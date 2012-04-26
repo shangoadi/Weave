@@ -52,6 +52,7 @@
 			import mx.collections.ListCollectionView;
 			import mx.controls.Label;
 			import mx.core.Application;
+			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
 			
 			import weave.Weave;
@@ -239,7 +240,7 @@
 					return;
 				
 				if (!defaultSelector.parent)
-					PopUpManager.addPopUp(defaultSelector, Application.application as Application);
+					PopUpManager.addPopUp(defaultSelector, FlexGlobals.topLevelApplication as Application);
 
 				defaultSelector.editor.clearSearch();
 				

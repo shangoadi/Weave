@@ -55,7 +55,7 @@
 	
 	<mx:Script>
 		<![CDATA[
-			import mx.core.Application;
+			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
 			
 			import weave.Weave;
@@ -176,7 +176,7 @@
 					clickFunction = function():void
 					{
 						// when a user clicks this option we will create the SelectionManager as a popup 
-						_popupManager = PopUpManager.createPopUp(Application.application as DisplayObject, SubsetManager) as SubsetManager;
+						_popupManager = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as DisplayObject, SubsetManager) as SubsetManager;
 						
 						// this makes it so the popup is not draggable
 						//_popupManager.isPopUp = false;

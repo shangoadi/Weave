@@ -32,6 +32,7 @@ package weave.visualization.layers
 	
 	import mx.containers.Canvas;
 	import mx.core.Application;
+	import mx.core.FlexGlobals;
 	
 	import weave.Weave;
 	import weave.api.WeaveAPI;
@@ -87,7 +88,7 @@ package weave.visualization.layers
 		
 		private function addContextMenuEventListener():void
 		{
-			var contextMenu:ContextMenu = (Application.application as Application).contextMenu;
+			var contextMenu:ContextMenu = (FlexGlobals.topLevelApplication as Application).contextMenu;
 			if (!contextMenu)
 				return callLater(addContextMenuEventListener);
 			contextMenu.addEventListener(ContextMenuEvent.MENU_SELECT, removeCursor);

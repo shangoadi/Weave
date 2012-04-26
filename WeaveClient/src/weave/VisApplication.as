@@ -44,6 +44,7 @@ package weave
 	import mx.controls.Alert;
 	import mx.controls.Text;
 	import mx.core.Application;
+	import mx.core.FlexGlobals;
 	import mx.core.UIComponent;
 	import mx.events.FlexEvent;
 	import mx.managers.PopUpManager;
@@ -1424,7 +1425,7 @@ package weave
 			
 			//initialize the print format
 			var printPopUp:PrintPanel = new PrintPanel();
-   			PopUpManager.addPopUp(printPopUp, Application.application as Application, true);
+   			PopUpManager.addPopUp(printPopUp, FlexGlobals.topLevelApplication as Application, true);
    			PopUpManager.centerPopUp(printPopUp);
    			//add current snapshot to Print Format
 			printPopUp.componentToScreenshot = component;

@@ -26,6 +26,7 @@ package weave
 	import flash.ui.ContextMenuItem;
 	
 	import mx.core.Application;
+	import mx.core.FlexGlobals;
 	import mx.events.FlexEvent;
 	import mx.managers.PopUpManager;
 	import mx.rpc.AsyncToken;
@@ -217,7 +218,7 @@ package weave
 						{
 							(e.target as RecordDataTable).setProbedKeySet(_localProbeKeySet);
 						});
-					PopUpManager.addPopUp(recordTable, Application.application as DisplayObject);
+					PopUpManager.addPopUp(recordTable, FlexGlobals.topLevelApplication as DisplayObject);
 				},
 				groupName
 				);
