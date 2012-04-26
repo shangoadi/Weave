@@ -34,6 +34,8 @@ package weave.visualization.layers
 	import mx.core.Application;
 	import mx.core.FlexGlobals;
 	
+	import spark.components.Group;
+	
 	import weave.Weave;
 	import weave.api.WeaveAPI;
 	import weave.api.data.IQualifiedKey;
@@ -65,7 +67,7 @@ package weave.visualization.layers
 			enableProbe.value = true;
 			enableAutoZoomToExtent.value = true;
 			// adding a canvas as child gets the selection rectangle on top of the vis
-			addChild(selectionRectangleCanvas);
+			addElement(selectionRectangleCanvas);
 			
 			addContextMenuEventListener();
 			
@@ -105,7 +107,7 @@ package weave.visualization.layers
 		
 		private var activeKeyType:String = null;
 		private var mouseDragActive:Boolean = false;
-		private const selectionRectangleCanvas:Canvas = new Canvas();
+		private const selectionRectangleCanvas:Group = new Group();
 		
 		private const mouseDragStageCoords:IBounds2D = new Bounds2D();
 		

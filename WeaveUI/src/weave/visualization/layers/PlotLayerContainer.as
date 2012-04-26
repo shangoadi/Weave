@@ -24,6 +24,8 @@ package weave.visualization.layers
 	
 	import mx.containers.Canvas;
 	
+	import spark.components.Group;
+	
 	import weave.Weave;
 	import weave.api.WeaveAPI;
 	import weave.api.core.ILinkableObject;
@@ -54,14 +56,14 @@ package weave.visualization.layers
 	 * 
 	 * @author adufilie
 	 */
-	public class PlotLayerContainer extends Canvas implements ILinkableObject
+	public class PlotLayerContainer extends Group implements ILinkableObject
 	{
 		public function PlotLayerContainer()
 		{
 			super();
 			
-			this.horizontalScrollPolicy = "off";
-			this.verticalScrollPolicy = "off";
+//			this.horizontalScrollPolicy = "off";
+//			this.verticalScrollPolicy = "off";
 
 			autoLayout = true;
 			percentHeight = 100;
