@@ -41,9 +41,7 @@ ConnectionComponent
 
 <mx:Script>
 	<![CDATA[
-		import mx.core.Application;
 		import mx.core.DragSource;
-		import mx.core.FlexGlobals;
 		import mx.core.IUIComponent;
 		import mx.events.DragEvent;
 		import mx.managers.DragManager;
@@ -124,7 +122,7 @@ ConnectionComponent
 			var ccArray:Array = event.dragSource.dataForFormat("cc") as Array;
 			// HACK: Assume Application has this function.
 			// TODO: Stop relying on any particular Application implementation.
-			FlexGlobals.topLevelApplication.drawConnection(ccArray[0],this);
+			WeaveAPI.topLevelApplication.drawConnection(ccArray[0],this);
 //			this.removeEventListener(MouseEvent.ROLL_OUT,handleMouseOut);
 //			(ccArray[0] as ConnectionComponent).removeEventListener(MouseEvent.ROLL_OUT,handleMouseOut);
 		}
@@ -171,7 +169,7 @@ ConnectionComponent
 		{
 			// HACK: Assume Application has this function.
 			// TODO: Stop relying on any particular Application implementation.
-			FlexGlobals.topLevelApplication.drawConnection(this);
+			WeaveAPI.topLevelApplication.drawConnection(this);
 		}
 		
 		private function addConnection(cc:ConnectionComponent):void
@@ -201,14 +199,14 @@ ConnectionComponent
 		{
 			// HACK: Assume Application has this function.
 			// TODO: Stop relying on any particular Application implementation.
-//			FlexGlobals.topLevelApplication.drawConnections(this,getConnectedComponents());
+//			WeaveAPI.topLevelApplication.drawConnections(this,getConnectedComponents());
 		}
 		
 		private function handleMouseOut(event:MouseEvent):void
 		{
 			// HACK: Assume Application has this function.
 			// TODO: Stop relying on any particular Application implementation.
-//			FlexGlobals.topLevelApplication.removeConnections();
+//			WeaveAPI.topLevelApplication.removeConnections();
 		}
 		
 		private function toggleToolTip():void

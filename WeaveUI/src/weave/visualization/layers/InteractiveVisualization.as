@@ -22,6 +22,7 @@ package weave.visualization.layers
 	import com.cartogrammar.drawing.DashedLine;
 	
 	import flash.display.Graphics;
+	import flash.display.InteractiveObject;
 	import flash.events.ContextMenuEvent;
 	import flash.events.Event;
 	import flash.events.KeyboardEvent;
@@ -29,10 +30,6 @@ package weave.visualization.layers
 	import flash.geom.Point;
 	import flash.ui.ContextMenu;
 	import flash.ui.Keyboard;
-	
-	import mx.containers.Canvas;
-	import mx.core.Application;
-	import mx.core.FlexGlobals;
 	
 	import spark.components.Group;
 	
@@ -90,7 +87,7 @@ package weave.visualization.layers
 		
 		private function addContextMenuEventListener():void
 		{
-			var contextMenu:ContextMenu = (FlexGlobals.topLevelApplication as Application).contextMenu;
+			var contextMenu:ContextMenu = (WeaveAPI.topLevelApplication as InteractiveObject).contextMenu;
 			if (!contextMenu)
 				return callLater(addContextMenuEventListener);
 			contextMenu.addEventListener(ContextMenuEvent.MENU_SELECT, removeCursor);

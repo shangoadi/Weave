@@ -28,8 +28,6 @@ package weave.ui
 	import flash.ui.ContextMenuItem;
 	import flash.utils.Dictionary;
 	
-	import mx.core.Application;
-	import mx.core.FlexGlobals;
 	import mx.core.UIComponent;
 	import mx.core.mx_internal;
 	import mx.events.FlexEvent;
@@ -644,7 +642,7 @@ package weave.ui
 		
 		private static function handleChangeMode(e:ContextMenuEvent):void
 		{
-			var contextMenu:ContextMenu = (FlexGlobals.topLevelApplication as Application).contextMenu;
+			var contextMenu:ContextMenu = (WeaveAPI.topLevelApplication as UIComponent).contextMenu;
 			if (!contextMenu)
 				return;
 			
@@ -683,7 +681,7 @@ package weave.ui
 		 */
 		private static function handleContextMenuOpened(e:ContextMenuEvent):void
 		{
-			var contextMenu:ContextMenu = (FlexGlobals.topLevelApplication as Application).contextMenu;
+			var contextMenu:ContextMenu = (WeaveAPI.topLevelApplication as UIComponent).contextMenu;
 			if (!contextMenu)
 				return;
 

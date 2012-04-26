@@ -54,8 +54,6 @@
 	<mx:Script>
 		<![CDATA[
 			import mx.controls.Alert;
-			import mx.core.Application;
-			import mx.core.FlexGlobals;
 			import mx.events.ItemClickEvent;
 			import mx.managers.PopUpManager;
 			
@@ -78,7 +76,7 @@
 			private static var _staticInstance:AddDataSourcePanel = null;
 			public static function showAsPopup():void
 			{
-				_staticInstance = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as DisplayObject, AddDataSourcePanel, false) as AddDataSourcePanel;
+				_staticInstance = PopUpManager.createPopUp(WeaveAPI.topLevelApplication as DisplayObject, AddDataSourcePanel, false) as AddDataSourcePanel;
 				
 				PopUpManager.centerPopUp(_staticInstance);
 			}
