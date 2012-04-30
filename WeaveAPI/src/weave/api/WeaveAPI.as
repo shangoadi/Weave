@@ -337,7 +337,7 @@ package weave.api
 				// run static initialization code to register weave implementations
 				try {
 					getDefinitionByName("_InitializeWeave"); // run static initialization code 
-				} catch (e:Error) { }
+				} catch (e:Error) { reportError(e);}
 			}
 			
 			var result:* = _singletonDictionary[singletonInterface];

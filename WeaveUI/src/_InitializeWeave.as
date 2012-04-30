@@ -51,6 +51,7 @@ package
 	import weave.data.ProjectionManager;
 	import weave.data.QKeyManager;
 	import weave.data.StatisticsCache;
+	import weave.editors.AttributeMenuToolEditor;
 	import weave.editors.AxisLabelPlotterEditor;
 	import weave.editors.CSVDataSourceEditor;
 	import weave.editors.DBFDataSourceEditor;
@@ -65,6 +66,7 @@ package
 	import weave.editors.XLSDataSourceEditor;
 	import weave.primitives.ColorRamp;
 	import weave.services.URLRequestUtils;
+	import weave.ui.AttributeMenuTool;
 	import weave.ui.ColorRampEditor;
 	import weave.utils.EditorManager;
 	import weave.visualization.plotters.AxisLabelPlotter;
@@ -118,6 +120,13 @@ package
 		EditorManager.registerEditor(ColorRamp, ColorRampEditor);
 		
 		EditorManager.registerEditor(SessionStateLog, SessionHistorySlider);
+		
+		public static function nothing():void
+		{
+		EditorManager.registerEditor(AttributeMenuTool, AttributeMenuToolEditor);
+		}
+		
+		nothing();
 		
 		/**
 		 * Include these packages in WeaveXMLDecoder so they will not need to be specified in the XML session state.

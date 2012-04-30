@@ -205,7 +205,7 @@
 				}
 				_weaveFileRef.browse([
 					new FileFilter("Weave file", "*.weave"),
-					new FileFilter("All files", "*")
+					new FileFilter("All files", "*.*")
 				]);
 			}
 			

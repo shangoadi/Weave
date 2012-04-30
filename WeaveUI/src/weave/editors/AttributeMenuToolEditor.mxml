@@ -19,45 +19,37 @@ You should have received a copy of the GNU General Public License
 along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 */
 -->
-<DraggablePanel xmlns="weave.ui.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
-				title="Attribute menu"
-				width="300" height="200" implements="weave.api.ui.IVisTool"
-				layout="vertical" xmlns:tools="weave.visualization.tools.*" xmlns:editors="weave.editors.*">
+<mx:VBox xmlns="weave.ui.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+			xmlns:tools="weave.visualization.tools.*" xmlns:editors="weave.editors.*" implements="weave.api.ui.ILinkableObjectEditor">
 	
-	<mx:ViewStack id="layoutViewStack" width="100%" height="100%">
-		<mx:Canvas label="Combo Box">
-			<CustomComboBox id="choiceCombo" prompt="Select an attribute..."
-							width="100%" height="100%"
-							labelFunction="choiceLabelFunction"
-							valueCommit="if (UIUtils.hasFocus(choiceCombo)) handleAttrSelected(choiceCombo.selectedIndex);"
-							/>
-		</mx:Canvas>
-		<mx:Canvas label="List">
-			<mx:List id="choiceList" width="100%" height="100%"
-					 labelFunction="choiceLabelFunction"
-					 change="handleAttrSelected(choiceList.selectedIndex);"
-					 />
-		</mx:Canvas>
-		<mx:Canvas label="Vertical Slider">
-			<mx:VSlider id="choiceVSlider" liveDragging="true" tickInterval="1"
-						width="100%" height="100%" snapInterval="1" minimum="0" minHeight="0" showDataTip="false"
-						change="handleAttrSelected(choiceVSlider.maximum - choiceVSlider.value);"
-						/><!-- slider may not have focus (bar may be clicked instead of thumb) -->
-		</mx:Canvas>
-		<mx:Canvas label="Horizontal Slider">
-			<mx:HBox verticalAlign="middle" width="100%" height="100%">
-				<mx:VBox visible="{hack_showPlayButton}" includeInLayout="{hack_showPlayButton}" horizontalAlign="center">
-					<mx:Button id="playButton" label="&gt;" toggle="true" toolTip="Play" click="lastFrame = getTimer() - 1000 / playSlider.value / 2;"/>
-					<mx:HSlider id="playSlider" width="48" minWidth="0" minimum=".5" maximum="2" tickInterval="0.5" snapInterval="0.25" value=".75" dataTipFormatFunction="{formatPlayTip}" liveDragging="true"/>
+
+		<mx:VBox width="100%" label="Settings">
+			<mx:HBox>
+				<mx:VBox>
+					<Indent label="Visualization tool:" indent="140">
+						<CustomComboBox prompt="Select a tool..." id="targetToolCombo" enabled="{targetToolCombo.dataProvider.length > 0}"
+										valueCommit="handleComboChange(targetToolCombo, _target.targetTool);" />
+						<HelpComponent>Select the visualization tool that you want the attribute menu to be linked to.</HelpComponent>
+					</Indent>
+					<Indent label="Visualization attribute:" indent="140" toolTip="The selected attribute will be modified by the combo box in this menu tool.">
+						<CustomComboBox prompt="Select an attribute..." id="targetAttributeCombo" enabled="{targetAttributeCombo.dataProvider.length > 0}"
+										valueCommit="handleComboChange(targetAttributeCombo, _target.targetAttribute);" />
+						<HelpComponent>Select the visualization attribute that you want the menu to be linked to.</HelpComponent>
+					</Indent>
+					<Indent label="Menu layout:" indent="140">
+						<CustomComboBox id="layoutCombo" prompt="Select a layout..." labelFunction="{layoutLabelFunction}"
+										dataProvider="{layouts}"/>
+						<HelpComponent>Select the layout for the attribute menu.</HelpComponent>
+					</Indent>
 				</mx:VBox>
-				<mx:HSlider id="choiceHSlider" liveDragging="true" tickInterval="1"
-							width="100%" height="100%" snapInterval="1" minimum="0" minHeight="0" showDataTip="false"
-							change="handleAttrSelected(choiceHSlider.value);"
-							/><!-- slider may not have focus (bar may be clicked instead of thumb) -->
 			</mx:HBox>
-		</mx:Canvas>
-	</mx:ViewStack>
-	
+			<ColumnListComponent id="choicesComponent" label="Attributes to appear in the menu" />
+			<Indent label="Label function">
+				<mx:TextInput width="100%" creationComplete="linkBindableProperty(_target.labelFunction, event.target, 'text');"/>
+				<mx:Button label="Reset" click="_target.labelFunction.value = DEFAULT_LABEL_FUNCTION;"/>
+			</Indent>
+		</mx:VBox>
+		<editors:WindowSettingsEditor target="{this}"/>
 	<mx:Script>
 		<![CDATA[
 			import mx.controls.ComboBox;
@@ -67,6 +59,7 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 			import weave.api.WeaveAPI;
 			import weave.api.copySessionState;
 			import weave.api.core.ILinkableHashMap;
+			import weave.api.core.ILinkableObject;
 			import weave.api.data.IAttributeColumn;
 			import weave.api.linkBindableProperty;
 			import weave.api.newLinkableChild;
@@ -78,51 +71,25 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 			import weave.core.LinkableString;
 			import weave.core.UIUtils;
 			import weave.data.AttributeColumns.DynamicColumn;
+			import weave.ui.AttributeMenuTool;
+			import weave.ui.AttributeSelectorPanel;
 			import weave.utils.ColumnUtils;
 			import weave.utils.ProbeTextUtils;
 			import weave.visualization.tools.SimpleVisTool;
 
-			WeaveAPI.registerImplementation(IVisTool, AttributeMenuTool, "Attribute Menu Tool");
 
 			private static const DEFAULT_LABEL_FUNCTION:String = 'column.getMetadata("title")';
 			
-			[Bindable] public var hack_showPlayButton:Boolean = false;
-			private var lastFrame:int = 0;
-			private function enterFrame(event:Event):void
-			{
-				if (playButton.selected)
-				{
-					if (lastFrame == 0 || getTimer() > lastFrame + 1000 / playSlider.value)
-					{
-						if (lastFrame)
-							handleAttrSelected((choiceHSlider.value + 1) % choices.getNames().length);
-						lastFrame = getTimer();
-					}
-				}
-			}
-			private function formatPlayTip(value:Number):String
-			{
-				if (value == 1)
-					return "1 frame per second";
-				return value + ' frames per second';
-			};
-			
-			public const targetTool:LinkableString = newLinkableChild(this, LinkableString);
-			public const targetAttribute:LinkableString = newLinkableChild(this, LinkableString);
-			public const choices:LinkableHashMap = registerLinkableChild(this, new LinkableHashMap(IAttributeColumn));
-			public const layoutMode:LinkableString = registerLinkableChild(this, new LinkableString(layouts[0], verifyLayoutMode));
-			public const labelFunction:LinkableFunction = registerLinkableChild(this, new LinkableFunction(DEFAULT_LABEL_FUNCTION, true, false, ['column']), handleChoicesChange);
-			public const selectedAttribute:LinkableString = newLinkableChild(this, LinkableString, handleSelectedAttributeChange);
-			
+
 			// used to label the choices
 			private function choiceLabelFunction(column:IAttributeColumn):String
 			{
 				var result:String = ColumnUtils.getTitle(column);
-				if (labelFunction.value)
+				if (_target.labelFunction.value)
 				{
 					try
 					{
-						result = labelFunction.apply(this, [column]) || '';
+						result = _target.labelFunction.apply(this, [column]) || '';
 					}
 					catch (e:Error)
 					{
@@ -141,59 +108,50 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 				return layoutLabels[layouts.indexOf(inputString)];
 			}
 			
-			override protected function constructor():void
-			{
-				super.constructor();
-				
-				// have a default dynamic title
-				panelTitle.value = "Attribute menu for {targetAttribute.value}"
-				
-				// have some default choices ready when the tool is created
-				copySessionState(ProbeTextUtils.probedColumns, choices);
-				
-				pinned.value = true;
-			}
-			
 			// called after children have been created
 			override protected function childrenCreated():void
 			{
 				super.childrenCreated();
 				
-				addEventListener(Event.ENTER_FRAME, enterFrame);
 				
 				// Since we're adding these callbacks after the children have been created,
 				// we don't have to worry about ui components being null inside the callbacks.
 				Weave.root.childListCallbacks.addGroupedCallback(this, handleGlobalListChange, true);
-				targetTool.addImmediateCallback(this, handleTargetToolChange, true);
-				targetAttribute.addImmediateCallback(this, handleTargetAttributeChange, true);
-				choices.addImmediateCallback(this, handleChoicesChange, true);
-								
-				layoutMode.addImmediateCallback(this, handleLayoutMode);
+				_target.targetTool.addImmediateCallback(this, handleTargetToolChange, true);
+				_target.targetAttribute.addImmediateCallback(this, handleTargetAttributeChange, true);
+				_target.choices.addImmediateCallback(this, handleChoicesChange, true);
+				
+				choicesComponent.hashMap = _target.choices;
+				
+				linkBindableProperty(_target.layoutMode, layoutCombo, 'selectedItem');
+				_target.layoutMode.addImmediateCallback(this, handleLayoutMode);
 				
 				callLater(showControlPanelIfNothingSelected);
 			}
 			
 			private function handleLayoutMode():void
 			{
-				layoutViewStack.selectedIndex = layouts.indexOf(layoutMode.value);
+				_target.layoutViewStack.selectedIndex = layouts.indexOf(_target.layoutMode.value);
 			}
 			
 			private function showControlPanelIfNothingSelected():void
 			{
 				// when the tool is created and nothing is selected, show the control panel
-				if (!targetTool.value && !targetAttribute.value && !WeaveAPI.StageUtils.mouseButtonDown)
-					toggleControlPanel();
+				if (!_target.targetTool.value && !_target.targetAttribute.value && !WeaveAPI.StageUtils.mouseButtonDown)
+					_target.toggleControlPanel();
 			}
 			
 			// this returns the tool object corresponding to the selected item in the toolCombo
 			public function getTargetTool():SimpleVisTool
 			{
-				return Weave.root.getObject(targetTool.value) as SimpleVisTool;
+				return Weave.root.getObject(_target.targetTool.value) as SimpleVisTool;
 			}
 			
 			// called whenever a global object gets added/removed/reordered
 			private function handleGlobalListChange():void
 			{
+				// update the list of tools
+				targetToolCombo.dataProvider = Weave.root.getNames(SimpleVisTool);
 				// after we set the data provider, we have to make sure the correct item is selected
 				handleTargetToolChange();
 			}
@@ -201,7 +159,20 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 			// called when the target tool changes
 			private function handleTargetToolChange():void
 			{
+				// make sure the correct item is selected
+				targetToolCombo.selectedItem = _target.targetTool.value;
 				
+				var tool:SimpleVisTool = getTargetTool();
+				// update the list of available attributes
+				if (tool)
+				{
+					var attrNames:Array = tool.getSelectableAttributeNames();
+					targetAttributeCombo.dataProvider = attrNames;
+				}
+				else
+				{
+					targetAttributeCombo.dataProvider = [];
+				}
 				
 				// after we set the data provider, we have to make sure the correct item is selected
 				handleTargetAttributeChange();
@@ -215,48 +186,50 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 				if (tool)
 				{
 					var attrNames:Array = tool.getSelectableAttributeNames();
-					var index:int = attrNames.indexOf(targetAttribute.value);
+					var index:int = attrNames.indexOf(_target.targetAttribute.value);
 					if (index >= 0)
 					{
 						// found the attribute name in the list, now check if it's a compatible object
 						var attrObjs:Array = tool.getSelectableAttributes();
 						var obj:Object = attrObjs[index];
 						var compatible:Boolean = obj is DynamicColumn || obj is ILinkableHashMap;
-						layoutViewStack.enabled = compatible;
+						_target.layoutViewStack.enabled = compatible;
 					}
 					else
 					{
-						layoutViewStack.enabled = false;
+						_target.layoutViewStack.enabled = false;
 					}
 				}
 				else
 				{
-					layoutViewStack.enabled = false;
+					_target.layoutViewStack.enabled = false;
 				}
 				
+				// make sure the correct item is selected
+				targetAttributeCombo.selectedItem = _target.targetAttribute.value;
 				// clear the choice
-				choiceCombo.selectedIndex = -1;
-				choiceList.selectedIndex = -1;
+				_target.choiceCombo.selectedIndex = -1;
+				_target.choiceList.selectedIndex = -1;
 			}
 			
 			// called when the admin alters the choices through the control panel
 			private function handleChoicesChange():void
 			{
 				// update the list of column objects available through the main window combo box
-				choiceCombo.dataProvider = choices.getObjects();
-				choiceList.dataProvider = choices.getObjects();
+				_target.choiceCombo.dataProvider = _target.choices.getObjects();
+				_target.choiceList.dataProvider = _target.choices.getObjects();
 				
 				// get a list of labels
-				var columns:Array = choices.getObjects();
+				var columns:Array = _target.choices.getObjects();
 				var names:Array = [];
 				for (var i:uint = 0; i < columns.length; i++)
 					names[i] = choiceLabelFunction(columns[i]);
 				
 				// special case for VSlider -- reverse order
-				choiceVSlider.labels = names.concat().reverse();
-				choiceHSlider.labels = names;
-				choiceVSlider.maximum = names.length - 1;
-				choiceHSlider.maximum = names.length - 1;
+				_target.choiceVSlider.labels = names.concat().reverse();
+				_target.choiceHSlider.labels = names;
+				_target.choiceVSlider.maximum = names.length - 1;
+				_target.choiceHSlider.maximum = names.length - 1;
 			}
 			
 			// called when combo box selection changes, makes sure it has focus before setting target LinkableString
@@ -277,11 +250,11 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 				var attrNames:Array = tool.getSelectableAttributeNames();
 				var attrObjs:Array = tool.getSelectableAttributes();
 				// find the index of the tool attribute selected in the control panel
-				var index:int = attrNames.indexOf(targetAttribute.value);
+				var index:int = attrNames.indexOf(_target.targetAttribute.value);
 				if (index < 0)
 				{
 					// we didn't find the "SelectableAttributeName"
-					reportError(StringUtil.substitute('"{0}" does not have attribute "{1}"', targetTool.value, targetAttribute.value));
+					reportError(StringUtil.substitute('"{0}" does not have attribute "{1}"', _target.targetTool.value, _target.targetAttribute.value));
 					return;
 				}
 				
@@ -301,34 +274,45 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 				if (dynamicColumn)
 				{
 					// get the column object the user clicked on and set the tool attribute
-					var availableChoices:Array = choices.getObjects(IAttributeColumn);
+					var availableChoices:Array = _target.choices.getObjects(IAttributeColumn);
 					var selectedAttr:IAttributeColumn = availableChoices[selectedIndex] as IAttributeColumn;
 					if (selectedAttr)
 					{
 						dynamicColumn.requestLocalObjectCopy(selectedAttr);
-						selectedAttribute.value = choices.getName(selectedAttr);
+						_target.selectedAttribute.value = _target.choices.getName(selectedAttr);
 					}
 				}
 				else
 				{
-					reportError('This option is not supported for the attribute "' + targetAttribute.value + '"');
+					reportError('This option is not supported for the attribute "' + _target.targetAttribute.value + '"');
 				}
 			}
 			
 			private function handleSelectedAttributeChange():void
 			{
-				var names:Array = choices.getNames();
-				var selectedIndex:int = names.indexOf(selectedAttribute.value);
-				choiceCombo.selectedIndex = selectedIndex;
-				choiceList.selectedIndex = selectedIndex;
+				var names:Array = _target.choices.getNames();
+				var selectedIndex:int = names.indexOf(_target.selectedAttribute.value);
+				_target.choiceCombo.selectedIndex = selectedIndex;
+				_target.choiceList.selectedIndex = selectedIndex;
 				if (selectedIndex >= 0)
 				{
-					choiceHSlider.value = selectedIndex;
-					choiceVSlider.value = names.length - 1 - selectedIndex;
+					_target.choiceHSlider.value = selectedIndex;
+					_target.choiceVSlider.value = names.length - 1 - selectedIndex;
 					handleAttrSelected(selectedIndex);
 				}
 			}
 			
+			private var _target:AttributeMenuTool;
+			
+			public function setTarget(object:ILinkableObject):void
+			{
+				_target = object as AttributeMenuTool;
+			}
+			public function applyChanges():void
+			{
+				
+			}
 		]]>
 	</mx:Script>
-</DraggablePanel>
+</mx:VBox>
+	
