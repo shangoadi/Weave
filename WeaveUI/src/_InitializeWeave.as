@@ -72,6 +72,8 @@ package
 	import weave.visualization.plotters.GeometryPlotter;
 	import weave.visualization.plotters.GridLinePlotter;
 	import weave.visualization.plotters.WMSPlotter;
+	import weave.visualization.tools.CompoundBarChartTool;
+	import weave.visualization.tools.CompoundBarChartToolEditor;
 
 	/**
 	 * Referencing this class will register WeaveAPI singleton implementations.
@@ -118,6 +120,8 @@ package
 		EditorManager.registerEditor(ColorRamp, ColorRampEditor);
 		
 		EditorManager.registerEditor(SessionStateLog, SessionHistorySlider);
+		
+		EditorManager.registerEditor(CompoundBarChartTool, CompoundBarChartToolEditor);
 		
 		/**
 		 * Include these packages in WeaveXMLDecoder so they will not need to be specified in the XML session state.

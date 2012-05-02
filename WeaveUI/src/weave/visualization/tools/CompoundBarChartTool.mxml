@@ -64,7 +64,7 @@
 			public const linkHeightAndSortColumns:LinkableBoolean = registerLinkableChild(this, new LinkableBoolean(false), handleHeightColumnsChange);
 			public const includeToolAttributesInProbe:LinkableBoolean = registerLinkableChild(this, new LinkableBoolean(true), updateProbeColumns);
 			
-			private var _plotter:CompoundBarChartPlotter = null;
+			internal var _plotter:CompoundBarChartPlotter = null;
 			private var _showYAxisLabels:Boolean = false;
 			private var _showXAxisLabels:Boolean = false;
 
