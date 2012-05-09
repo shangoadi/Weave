@@ -353,7 +353,7 @@
 				{
 					cRampEditor.enabled = true;
 					groupMode.enabled = true;
-					showValueLabelsCheckBox.enabled = groupedRadioButton.selected;
+					showValueLabelsCheckBox.enabled = true;
 					colorColumnInput.enabled = false;
 				}
 				else
@@ -378,6 +378,18 @@
 			
 			// backwards compatibility
 			[Deprecated] public function set labelColumn(value:Object):void { setSessionState(_plotter.labelColumn, value); }
+			
+			private function showValueLabelsCheckBox_changeHandler():void
+			{
+				if (showValueLabelsCheckBox.selected)
+				{
+					if ((stackedRadioButton.enabled && stackedRadioButton.selected)|| (percentStackedRadioButton.enabled && percentStackedRadioButton.selected))
+						_plotter.valueLabelHorizontalAlign.value = "right";
+					else
+						_plotter.valueLabelHorizontalAlign.value = "left";
+				}
+			}
+			
 		]]>
 	</mx:Script>
 	<ui:ControlPanel>
@@ -440,7 +452,7 @@
 				
 				<mx:VBox>				
 					<mx:CheckBox id="showValueLabelsCheckBox" label="Show value labels"
-								 toolTip="This option will show a value label for each bar."/>
+								 toolTip="This option will show a value label for each bar." change="showValueLabelsCheckBox_changeHandler()"/>
 					<mx:VBox paddingLeft="20" enabled="{showValueLabelsCheckBox.selected}">
 						<mx:VBox>
 							<ui:Indent label="Color by record">
