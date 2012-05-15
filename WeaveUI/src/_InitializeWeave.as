@@ -72,6 +72,8 @@ package
 	import weave.visualization.plotters.GeometryPlotter;
 	import weave.visualization.plotters.GridLinePlotter;
 	import weave.visualization.plotters.WMSPlotter;
+	import weave.visualization.tools.LineChartToolEditor;
+	import weave.visualization.tools.LineChartTool;
 
 	/**
 	 * Referencing this class will register WeaveAPI singleton implementations.
@@ -119,6 +121,7 @@ package
 		
 		EditorManager.registerEditor(SessionStateLog, SessionHistorySlider);
 		
+		EditorManager.registerEditor(LineChartTool, LineChartToolEditor);
 		/**
 		 * Include these packages in WeaveXMLDecoder so they will not need to be specified in the XML session state.
 		 */

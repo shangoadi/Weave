@@ -58,7 +58,7 @@
 			WeaveAPI.registerImplementation(IVisTool, LineChartTool, "Line Chart");
 			
 			[Bindable]
-			private var _plotter:ParallelCoordinatesPlotter = null;
+			public var _plotter:ParallelCoordinatesPlotter = null;
 			override protected function constructor():void
 			{
 				super.constructor();
@@ -111,8 +111,7 @@
 					initColumnDefaults.apply(null, columnsToInit);
 				
 				_plotter.columns.addGroupedCallback(this, updateProbeColumns, true);
-				_plotter.xData.addGroupedCallback(this, updateFilterText);
-				_plotter.xValues.addGroupedCallback(this, updateFilterText, true);
+
 				
 				linkSessionState(visualization.marginRightNumber, labelPlotter.maxWidth);
 			}
@@ -130,53 +129,12 @@
 					visualization.additionalProbeColumns = null;
 			}
 			
-			/**
-			 * This function generates a label equation using the current Label column and the plotter's filterColumn
-			 * and makes it the new Label column
-			 */
-			private function updateLabelColumn():void
-			{
-				if(!_plotter.enableGroupBy.value) 
-					return;
-				if(!labelPlotter.text.internalColumn)
-					return;
-				if(ColumnUtils.getKeyType(labelPlotter.text) != ColumnUtils.getKeyType(_plotter.xData))
-					return;
-				if(labelPlotter.text.internalColumn is EquationColumn)
-					return;
-				
-				var labelColumn:DynamicColumn = new DynamicColumn();
-				labelColumn.requestLocalObjectCopy(labelPlotter.text);
-				
-				var labelEquation:EquationColumn = labelPlotter.text.requestLocalObject(EquationColumn, false) as EquationColumn;
-				labelEquation.delayCallbacks();
-				labelEquation.variables.requestObjectCopy("labelColumn",labelColumn);
-				labelEquation.variables.requestObjectCopy("keyColumn", _plotter.groupBy);
-				labelEquation.setMetadata(AttributeColumnMetadata.TITLE, ColumnUtils.getTitle(labelColumn) + "Equation");
-				labelEquation.equation.value = 'key = getAssociatedKeys(keyColumn, getKey())[0], getValueFromKey(labelColumn, key, String)';
-				labelEquation.resumeCallbacks();
-				/* 
-				if(!_plotter.lineStyle.color.internalDynamicColumn)
-					return;
-				
-				if(_plotter.lineStyle.color.internalDynamicColumn is EquationColumn)
-					return;
-				
-				var color:DynamicColumn = new DynamicColumn();
-				color.requestGlobalObject(Weave.DEFAULT_COLOR_COLUMN, ColorColumn, false);
-				
-				var equation:EquationColumn = colorColumn.requestLocalObject(EquationColumn, false) as EquationColumn;
-				equation.variables.copyObject("colorColumn", color);
-				equation.variables.copyObject("key", _plotter.keyColumn);
-				equation.columnTitle = ColumnUtils.getTitle(color)+'Equation';
-				equation.equation.value = 'key = getKeysFromValue(get("key"), getKey(), QKey)[0], getValueFromKey(get("colorColumn"), key, Number)';
-				 */
-			}
 			
-			private function updateFilterText():void
+			
+/* 			private function updateFilterText():void
 			{
 				xValuesInput.text = WeaveAPI.CSVParser.createCSV([_plotter.getXValues()]);
-			}
+			} */
 			
 			override protected function childrenCreated():void
 			{
@@ -196,24 +154,10 @@
 				
 				visualization.includeNonSelectableLayersInAutoZoom.value = false;
 				
-				(labelComponent as DynamicColumnComponent).dynamicObject = labelPlotter.text;
 				
-				linkBindableProperty(labelPlotter.size.defaultValue,labelSizeSlider,"value");
-				linkBindableProperty(labelPlotter.color.defaultValue, colorPicker, "selectedColor");
 
-				linkBindableProperty(_plotter.alphaColumn.defaultValue, 		alphaSlider,		"value");
-				linkBindableProperty(_plotter.shapeSize,  					shapeSizeSlider, 	"value");
-				linkBindableProperty(_plotter.lineStyle.weight.defaultValue, thicknessSlider, 	"value");
-				linkBindableProperty(_plotter.shapeToDraw, shapeCombo, "selectedItem");
-				linkBindableProperty(_plotter.shapeBorderThickness, shapeBorderSizeSlider, "value");
-				linkBindableProperty(_plotter.shapeBorderColor, shapeBorderColorPicker, "selectedColor");
-				_plotter.curveType.addGroupedCallback(this, handleCurveType, true);
-				function handleCurveType():void
-				{
-					curveCheckBox.selected = _plotter.curveType.value == ParallelCoordinatesPlotter.CURVE_DOUBLE;
-				}
 				
-				visualization.getPlotLayer().backgroundIsVisible.addImmediateCallback(this, updateSelectionAndProbeOnlyCheckBox, true);
+				//visualization.getPlotLayer().backgroundIsVisible.addImmediateCallback(this, updateSelectionAndProbeOnlyCheckBox, true);
 			}
 			
 			override public function getSelectableAttributeNames():Array
@@ -324,29 +268,13 @@
 				return newTitle;
 			}
 			
-			private function handleCurveCheckBox():void
-			{
-				if (curveCheckBox.selected)
-					_plotter.curveType.value = ParallelCoordinatesPlotter.CURVE_DOUBLE;
-				else
-					_plotter.curveType.value = ParallelCoordinatesPlotter.CURVE_NONE;
-			}
+
 			
-			private function alphaSliderFormatFunction(value:Number):String {
-            	//return int(100 - (value * 100)) + "% Transparent";
-            	return int((value * 100)) + "% Opaque" + "\n" + int(100 - (value * 100)) + "% Transparent";
-            }
+
 			
-			private function updateSelectionAndProbeOnlyCheckBox():void
-			{
-				selectionAndProbeOnlyCheckBox.selected = !visualization.getPlotLayer().backgroundIsVisible.value;
-			}
-			private function handleSelectionAndProbeOnlyCheckBox():void
-			{
-				visualization.getPlotLayer().backgroundIsVisible.value = !selectionAndProbeOnlyCheckBox.selected;
-			}
+
 			
-			private var labelPlotter:TextGlyphPlotter = null ;
+			public var labelPlotter:TextGlyphPlotter = null ;
 			private function addLabelLayer():void
 			{
 				var layer:SelectablePlotLayer = visualization.layers.requestObject("label", SelectablePlotLayer, true);
@@ -401,121 +329,5 @@
 		]]>
 	</mx:Script>
 	<mx:Number id="controlsFontSize">10</mx:Number>
-	<ui:ControlPanel>
-		<mx:VBox id="attributesPanel" label="Data">
-			<ui:DynamicColumnComponent visTool="{this}" label="Color" creationComplete="(event.target as DynamicColumnComponent).dynamicObject = colorColumn" showLinkControl="false"/>
-			<ui:DynamicColumnComponent visTool="{this}" label="Label" id="labelComponent"/>
-			<ui:ColumnListComponent visTool="{this}" label="Attributes along X axis" creationComplete="(event.target as ColumnListComponent).hashMap = _plotter.columns"/>
-			<mx:HBox>
-				<mx:CheckBox id="probeColumnsCheckBox" label="Include tool attributes in probe tooltip"
-							 toolTip="Checking this box makes all of the tool's attributes visible in this tool's probe tooltip"
-							 creationComplete="linkBindableProperty(includeToolAttributesInProbe,event.target,'selected')"/>
-			</mx:HBox>
-		</mx:VBox>
-		<mx:VBox id="VizControlsPanel" label="Appearance">
-			<mx:HBox verticalAlign="middle">
-				<mx:Label text="Shape:" color="0x000000" fontSize="{controlsFontSize}" 
-						  toolTip="This controls what shape is used to indicate the data points on the axes."/>
-				<ui:CustomComboBox id="shapeCombo" dataProvider="{ParallelCoordinatesPlotter.shapesAvailable}"/>
-				<mx:HBox enabled="{shapeCombo.selectedItem != ParallelCoordinatesPlotter.NO_SHAPE}" verticalAlign="middle">
-					<mx:Label text="Size:"
-							  color="0x000000" fontSize="{controlsFontSize}" 
-							  toolTip="This controls the size of the shapes indicating the data points on the axes."/>
-					<mx:HSlider id="shapeSizeSlider"
-								width="100%" 
-								snapInterval="1"
-								tickInterval="5"
-								labels="{['0','5','10','15','20']}"
-								minimum="0" maximum="20" 
-								liveDragging="true"/>
-				</mx:HBox>
-			</mx:HBox>
-			
-			<mx:HBox verticalAlign="middle">
-				<mx:HBox
-						enabled="{!(shapeCombo.selectedItem == ParallelCoordinatesPlotter.NO_SHAPE || 
-						shapeCombo.selectedItem == ParallelCoordinatesPlotter.EMPTY_CIRCLE ||
-						shapeCombo.selectedItem == ParallelCoordinatesPlotter.EMPTY_SQUARE ||
-						shapeBorderSizeSlider.value == 0) }">
-					<mx:Label text="Shape border color:" color="0x000000" fontSize="{controlsFontSize}"/>
-					<mx:ColorPicker id="shapeBorderColorPicker"
-									toolTip="This controls color of the border around the shape at each point."/>
-				</mx:HBox>
-				
-				<mx:HBox width="100%" verticalAlign="middle"
-						enabled="{shapeCombo.selectedItem != ParallelCoordinatesPlotter.NO_SHAPE}">
-					<mx:Label text="Thickness:" color="0x000000" fontSize="{controlsFontSize}" 
-							  toolTip="This controls the border size of the shapes indicating the data points on the axes."/>
-					<mx:HSlider id="shapeBorderSizeSlider" 
-								width="100%" 
-								snapInterval="1"
-								tickInterval="1" 
-								labels="{['0', '1', '2', '3', '4', '5']}"
-								minimum="0" maximum="5"
-								liveDragging="true"/>
-				</mx:HBox>
-			</mx:HBox>
-			
-			<mx:HBox verticalAlign="middle">
-				<mx:Label text="Line Opacity:" toolTip="Use this control to see how transparent lines are.  Moving left increases transparency (decreased opacity), moving to the right decreases transparency (increased opacity) up to fully opaque (no transparency)."/>
-				<mx:HSlider id="alphaSlider" 
-							width="100%" 
-							snapInterval="0.1"
-							tickInterval="0.5" labels="{['0%', '50%', '100%']}"
-							dataTipFormatFunction="alphaSliderFormatFunction"
-							minimum="0.0" maximum="1.0" 
-							liveDragging="true"/>
-				<mx:Label text="Thickness:"/>
-				<mx:HSlider id="thicknessSlider" minimum="1" maximum="4" labels="{['1','2','3','4']}" snapInterval="1" liveDragging="true" tickInterval="1"/>
-				
-			</mx:HBox>
-			<mx:CheckBox id="curveCheckBox" label="Curved lines"
-						 change="_plotter.curveType.value = curveCheckBox.selected ? ParallelCoordinatesPlotter.CURVE_DOUBLE : ParallelCoordinatesPlotter.CURVE_NONE"/>
-			
-			<mx:HBox verticalAlign="middle">
-				<mx:Label text="Label Text Size: "/>
-				<mx:HSlider id="labelSizeSlider"
-							width="100%"
-							alpha="1.0"
-							snapInterval="1"
-							tickInterval="5" labels="{['5','10','15','20']}"
-							minimum="5" maximum="20" 
-							liveDragging="true"/>
-				<mx:Label text="Color:"/>
-				<mx:ColorPicker id="colorPicker" width="22" height="22"/>
-			</mx:HBox>
 
-			<mx:CheckBox id="selectionAndProbeOnlyCheckBox" label="Show selection &amp; probe only" 
-						 toolTip="" change="handleSelectionAndProbeOnlyCheckBox();"/>
-			<mx:CheckBox id="zoomToSubsetCheckBox" label="Zoom to Subset" 
-						 toolTip="Enables automatic zooming to the subset of data currently displayed"
-						 creationComplete="linkBindableProperty(_plotter.zoomToSubset, event.target, 'selected')"/>
-		</mx:VBox>
-		<mx:VBox label="Grouping">
-			<mx:CheckBox id="enableGroupByCheckBox" creationComplete="linkBindableProperty(_plotter.enableGroupBy, event.target, 'selected')"
-						 label="Group records by column values"
-						 toolTip="Enable/disable grouping data by category value"/>
-			<mx:VBox enabled="{enableGroupByCheckBox.selected}">
-				
-				<mx:VBox paddingLeft="20" borderStyle="solid">
-					<ui:DynamicColumnComponent visTool="{this}" label="X Column" creationComplete="(event.target as DynamicColumnComponent).dynamicObject = _plotter.xData"
-											   toolTip="Attribute to appear on the x axis. All columns must have the same keyType."/>
-					<ui:DynamicColumnComponent visTool="{this}" label="Y Column" creationComplete="(event.target as DynamicColumnComponent).dynamicObject = _plotter.yData"
-											   toolTip="Attribute to appear on the y axis. All columns must have the same keyType."/>
-					<ui:DynamicColumnComponent visTool="{this}" label="Group by" creationComplete="(event.target as DynamicColumnComponent).dynamicObject = _plotter.groupBy"
-											   toolTip="Specify column to get keys from. All columns must have the same keyType."/>
-					<ui:DynamicColumnComponent visTool="{this}" label="Label" creationComplete="(event.target as DynamicColumnComponent).dynamicObject = labelPlotter.text"
-											   toolTip="Attribute used for record label text. All columns must have the same keyType."/>
-				</mx:VBox>
-				<mx:Button label="Generate label Equation" toolTip="Generates label equation from current Label column if its keyType matches the group-by keyType"
-						   click="updateLabelColumn()"/>
-				<mx:HBox width="100%">
-					<mx:Label text="Customize X values:"/>
-					<mx:TextInput id="xValuesInput" toolTip="These values will appear on the x axis" width="100%"/>
-					<mx:Button label="Apply" click="_plotter.xValues.value = xValuesInput.text;"/>
-					<mx:Button label="Reset" click="_plotter.xValues.value = ''; updateFilterText();"/>
-				</mx:HBox>
-			</mx:VBox>
-		</mx:VBox>
-	</ui:ControlPanel>
 </SimpleVisTool>
