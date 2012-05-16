@@ -64,7 +64,7 @@
 				visualization.marginLeft.value   = "80";
 				visualization.marginRight.value  = "10";
 				
-				_plotter.dynamicColorColumn.addGroupedCallback(this, handleDynamicColorColumnChange, true);
+				
 
 				visualization.marginLeftNumber.addGroupedCallback(this, updateAxisLabels);
 				visualization.marginBottomNumber.addGroupedCallback(this, updateAxisLabels);
@@ -115,28 +115,6 @@
 				return "Histogram of " + ColumnUtils.getTitle(_plotter.dynamicColorColumn);
 			}
 
-			private var _prevBinnedColumn:BinnedColumn = null;
-			private function handleDynamicColorColumnChange():void
-			{
-				if (!parent)
-					return callLater(handleDynamicColorColumnChange);
-				
-				if (_plotter.internalColorColumn)
-					cRampEditor.colorRamp = _plotter.internalColorColumn.ramp;
-				else
-					cRampEditor.colorRamp = null;
-				
-				if (_prevBinnedColumn)
-					unlinkSessionState(_prevBinnedColumn, binEditor.binnedColumn);
-				
-				if (_plotter.internalBinnedColumn)
-					linkSessionState(_plotter.internalBinnedColumn, binEditor.binnedColumn);
-				
-				
-				_prevBinnedColumn = _plotter.internalBinnedColumn;
-				dataColumnComponent.dynamicObject = internalDataColumn;
-			}
-			
 			public function get internalDataColumn():DynamicColumn
 			{
 				try
@@ -171,20 +149,4 @@
 			}
 		]]>
 	</mx:Script>
-
-	<ui:ControlPanel>
-		<mx:VBox label="Visualization Controls">
-			<mx:CheckBox id="probeColumnsCheckBox" label="Include tool attributes in probe tooltip"
-						 toolTip="Checking this box makes the tool's binned attribute visible in this tool's probe tooltip"
-						 creationComplete="linkBindableProperty(includeToolAttributesInProbe,event.target,'selected')"/>
-			<ui:DynamicColumnComponent visTool="{this}" id="dataColumnComponent" label="bin data"/>
-			<ui:BinningDefinitionEditor id="binEditor"/>
-		</mx:VBox>
-		<mx:VBox label="Advanced">
-			<mx:CheckBox id="drawPartialCheckBox"
-						 label="Draw partial histogram bars for selection and probe"
-						 creationComplete="linkBindableProperty(_plotter.drawPartialBins, event.target, 'selected');"/>
-			<ui:ColorRampEditor id="cRampEditor"/>
-		</mx:VBox>
-	</ui:ControlPanel>
 </SimpleVisTool>

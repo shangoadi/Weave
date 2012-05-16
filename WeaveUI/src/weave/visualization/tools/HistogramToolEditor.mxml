@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TabNavigator xmlns:mx="http://www.adobe.com/2006/mxml"
+		   implements="weave.api.ui.ILinkableObjectEditor" xmlns:ui="weave.ui.*"
+		   >
+	<mx:Script>
+		<![CDATA[
+			import weave.api.core.ILinkableObject;
+			import weave.api.linkBindableProperty;
+			import weave.api.linkSessionState;
+			import weave.api.unlinkSessionState;
+			import weave.data.AttributeColumns.BinnedColumn;
+			import weave.visualization.tools.HistogramTool;
+			
+			private var _target:HistogramTool = null;
+			
+			public function setTarget(object:ILinkableObject):void
+			{
+				_target = object as HistogramTool;
+				_target.plotter.dynamicColorColumn.addGroupedCallback(this, handleDynamicColorColumnChange, true);
+			}
+			public function applyChanges():void
+			{
+				
+			}
+			private function handleDynamicColorColumnChange():void
+			{
+				if (!parent)
+					return callLater(handleDynamicColorColumnChange);
+				
+				if (_target.plotter.internalColorColumn)
+					cRampEditor.colorRamp = _target.plotter.internalColorColumn.ramp;
+				else
+					cRampEditor.colorRamp = null;
+				
+				if (_prevBinnedColumn)
+					unlinkSessionState(_prevBinnedColumn, binEditor.binnedColumn);
+				
+				if (_target.plotter.internalBinnedColumn)
+					linkSessionState(_target.plotter.internalBinnedColumn, binEditor.binnedColumn);
+				
+				
+				_prevBinnedColumn = _target.plotter.internalBinnedColumn;
+				dataColumnComponent.dynamicObject = _target.internalDataColumn;
+			}
+			private var _prevBinnedColumn:BinnedColumn = null;
+		
+			override protected function childrenCreated():void
+			{
+				super.childrenCreated();
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:VBox label="Visualization Controls">
+		<mx:CheckBox id="probeColumnsCheckBox" label="Include tool attributes in probe tooltip"
+					 creationComplete="linkBindableProperty(_target.includeToolAttributesInProbe,event.target,'selected')"
+					 toolTip="Checking this box makes the tool's binned attribute visible in this tool's probe tooltip"/>
+		<ui:DynamicColumnComponent id="dataColumnComponent" label="bin data" visTool="{_target}"/>
+		<ui:BinningDefinitionEditor id="binEditor"/>
+	</mx:VBox>
+	<mx:VBox label="Advanced">
+		<mx:CheckBox id="drawPartialCheckBox" label="Draw partial histogram bars for selection and probe"
+					 creationComplete="linkBindableProperty(_target.plotter.drawPartialBins, event.target, 'selected');"/>
+		<ui:ColorRampEditor id="cRampEditor"/>
+	</mx:VBox>
+</mx:TabNavigator>
