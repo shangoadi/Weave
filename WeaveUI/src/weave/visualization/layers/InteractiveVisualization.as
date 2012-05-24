@@ -21,6 +21,7 @@ package weave.visualization.layers
 {
 	import com.cartogrammar.drawing.DashedLine;
 	
+	import flash.display.DisplayObjectContainer;
 	import flash.display.Graphics;
 	import flash.display.InteractiveObject;
 	import flash.events.ContextMenuEvent;
@@ -49,6 +50,7 @@ package weave.visualization.layers
 	import weave.utils.ProbeTextUtils;
 	import weave.utils.SpatialIndex;
 	import weave.utils.ZoomUtils;
+	import weave.visualization.tools.MapTool;
 	
 	/**
 	 * This is a container for a list of PlotLayers
@@ -167,7 +169,10 @@ package weave.visualization.layers
 				}
 				else if (_mouseMode == InteractionController.SELECT || _mouseMode == InteractionController.PROBE)
 				{
-					CustomCursorManager.showCursor(CustomCursorManager.SELECT_REPLACE_CURSOR, 2, _selectModeCursorOffsetX, _selectModeCursorOffsetY);
+					if(  _mouseMode == InteractionController.PROBE &&  _lastProbedQKey == null && Weave.properties.toolInteractions.defaultDragMode.value == InteractionController.PAN && getMapParent(parent))
+						CustomCursorManager.showCursor(CustomCursorManager.HAND_CURSOR);		
+					else
+						CustomCursorManager.showCursor(CustomCursorManager.SELECT_REPLACE_CURSOR, 2, _selectModeCursorOffsetX, _selectModeCursorOffsetY);
 				}	
 				else if (_mouseMode == InteractionController.SELECT_REMOVE)
 				{
@@ -178,6 +183,24 @@ package weave.visualization.layers
 					CustomCursorManager.showCursor(CustomCursorManager.ZOOM_CURSOR);
 				}
 			}
+		}
+		
+		/*
+		*	Checks to see if the parent is a MapTool. Used for detereming if an open mouse cursor should be used.
+		*/
+		private function getMapParent(target:DisplayObjectContainer):Boolean
+		{
+			var targetComponent:DisplayObjectContainer = target;
+			
+			while(targetComponent)
+			{
+				if(targetComponent is MapTool)
+					return true;
+				
+				targetComponent = targetComponent.parent;
+			}
+			
+			return false;
 		}
 		
 		private function handleKeyboardEvent():void
@@ -699,7 +722,10 @@ package weave.visualization.layers
 			if (WeaveAPI.StageUtils.mouseMoved)
 			{
 				if (allowCallLater)
+				{
 					callLater(handleProbe, [false]);
+					return;
+				}
 			}
 			else if (mouseIsRolledOver)
 			{
