@@ -25,7 +25,7 @@
 				   sessionPanelCoordsAsPercentages="false"
 				   minWidth="300"
 				   percentWidth="NaN" percentHeight="NaN"
-				   title="Export Session State"
+				   title="{lang('Export Session State')}"
 				   >
 	<mx:VBox paddingLeft="{padding}" paddingRight="{padding}" paddingTop="{padding}" paddingBottom="{padding}">
 		<mx:Label text="Choose Options"/>
