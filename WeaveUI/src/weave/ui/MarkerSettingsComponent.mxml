@@ -60,7 +60,7 @@
 			
 			private static var _editContextMenuItem:ContextMenuItem 	= null;
 			private static var _addRemoveContextMenuItem:ContextMenuItem = null;
-			private static const ADD_CAPTION:String           = "Add Marker"
+			private static const ADD_CAPTION:String           = lang("Add Marker")
 //			private static const REMOVE_CAPTION:String        = "Remove Remove Marker"
 //			private static const EDIT_TEXT_CAPTION:String     = "Edit Marker"
 				

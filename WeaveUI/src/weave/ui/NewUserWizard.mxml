@@ -41,12 +41,12 @@
 			<mx:Label color="0xFF0000" id="uploadMessage"/>
 		</mx:HBox>
 		<!--<mx:Label text="OR" fontWeight="bold" />
-		<mx:Label text="Enter File URL"/>
+		<mx:Label text="{lang('Enter File URL')}"/>
 		<mx:HBox>
 		<mx:TextInput width="200" borderStyle="solid" toolTip="enter URL" cornerRadius="5"/>
 		<mx:Label id="urlMessage"/>
 		</mx:HBox>-->
-		<mx:Label text="OR" fontWeight="bold" />
+		<mx:Label text="{lang('OR')}" fontWeight="bold" />
 		<mx:HBox>
 			<mx:Label text="{lang('Paste your data below')}"/>
 			<ui:HelpComponent>
@@ -84,10 +84,10 @@
 	</mx:VBox>
 	<mx:VBox id="visTools" width="100%">
 		<mx:Text text="{lang('Your data is now ready to be visualized!')}"/>
-		<mx:Text text="* Click the image below to add a visual tool or"/>
-		<mx:HBox><mx:Text text="* Use the"/><mx:Text fontWeight="bold" text="'Tools'"/><mx:Text text=" menu to add more visual tools"/></mx:HBox>		
-		<mx:HBox><mx:Text text="* Click the"/><mx:Image source="@Embed(source= '/weave/resources/images/tinyWrench.png')"/><mx:Text text=" image in the visual tools to edit the dimensions."/></mx:HBox>
-		<mx:HBox><mx:Text text="* Add as many different tools and start"/><mx:Text fontWeight="bold" text="Weave" paddingRight="-5"/><mx:Text paddingLeft="-5" text="-ing!"/></mx:HBox>
+		<mx:Text text="{lang('* Click the image below to add a visual tool or')}"/>
+		<mx:HBox><mx:Text text="{lang('* Use the')}"/><mx:Text fontWeight="bold" text="'Tools'"/><mx:Text text="{lang(' menu to add more visual tools')}"/></mx:HBox>		
+		<mx:HBox><mx:Text text="{lang('* Click the')}"/><mx:Image source="@Embed(source= '/weave/resources/images/tinyWrench.png')"/><mx:Text text="{lang(' image in the visual tools to edit the dimensions.')}"/></mx:HBox>
+		<mx:HBox><mx:Text text="{lang('* Add as many different tools and start')}"/><mx:Text fontWeight="bold" text="Weave" paddingRight="-5"/><mx:Text paddingLeft="-5" text="-ing!"/></mx:HBox>
 		
 		<!--<mx:Text leading="-3" width="100%" >
 			<mx:htmlText>
@@ -106,30 +106,30 @@
 		<mx:HBox>
 			<mx:VBox>
 				<mx:Image width="{thumbnailWidth}" height="{thumbnailHeight}" click="createGlobalObject(CompoundBarChartTool)" id="barChartImage" source="@Embed(source= '/weave/resources/images/bar_chart_weave.png')"/>
-				<mx:Label text="Bar Chart" fontWeight="bold"/>
+				<mx:Label text="{lang('Bar Chart')}" fontWeight="bold"/>
 			</mx:VBox>
 			<mx:VBox>
 				<mx:Image width="{thumbnailWidth}" height="{thumbnailHeight}" click="createGlobalObject(LineChartTool)" id="lineChartImage" source="@Embed(source= '/weave/resources/images/line_chart_weave_new.png')"/>
-				<mx:Label text="Line Chart" fontWeight="bold"/>
+				<mx:Label text="{lang('Line Chart')}" fontWeight="bold"/>
 			</mx:VBox>
 			<mx:VBox>
 				<mx:Image width="{thumbnailWidth}" height="{thumbnailHeight}" click="createGlobalObject(ScatterPlotTool)" id="scatterplotImage" source="@Embed(source= '/weave/resources/images/scatter_plot_weave_new.png')"/>
-				<mx:Label text="Scatterplot" fontWeight="bold"/>
+				<mx:Label text="{lang('Scatterplot')}" fontWeight="bold"/>
 			</mx:VBox>
 			
 		</mx:HBox>
 		<mx:HBox>
 			<mx:VBox>
 				<mx:Image width="{thumbnailWidth}" height="{thumbnailHeight}" click="createGlobalObject(PieChartTool)" id="pieChartImage" source="@Embed(source= '/weave/resources/images/pie_chart_weave.png')"/>
-				<mx:Label text="Pie Chart" fontWeight="bold"/>
+				<mx:Label text="{lang('Pie Chart')}" fontWeight="bold"/>
 			</mx:VBox>
 			<mx:VBox>
 				<mx:Image width="{thumbnailWidth}" height="{thumbnailHeight}" click="createGlobalObject(GaugeTool)" id="gaugeImage" source="@Embed(source= '/weave/resources/images/gauge_meter_weave.png')"/>
-				<mx:Label text="Gauge Meter" fontWeight="bold"/>
+				<mx:Label text="{lang('Gauge Meter')}" fontWeight="bold"/>
 			</mx:VBox>
 			<mx:VBox>
 				<mx:Image width="{thumbnailWidth}" height="{thumbnailHeight}" click="createGlobalObject(HistogramTool)" id="histogramImage" source="@Embed(source= '/weave/resources/images/histogram_weave.png')"/>
-				<mx:Label text="Histogram" fontWeight="bold"/>
+				<mx:Label text="{lang('Histogram')}" fontWeight="bold"/>
 			</mx:VBox>
 			
 		</mx:HBox>
@@ -328,7 +328,7 @@
 			
 			private function handleDatasetSelected(event:Event):void
 			{
-				uploadMessage.text = "loading...";
+				uploadMessage.text = lang("loading...");
 				_fileLoader.load();
 			}
 
@@ -359,7 +359,7 @@
 						
 						if(xlsFile.sheets.length == 0)
 						{
-							Alert.show("No data found");
+							Alert.show(lang("No data found"));
 							return;
 						}
 
@@ -404,11 +404,11 @@
 						updateCSVDataStringFromArray(fileDataArray);
 					}
 					keyColumnSelector.dataProvider = uniqueColumns;
-					uploadMessage.text = "Loaded!";
+					uploadMessage.text = lang("Loaded!");
 					this.next();
 				}
 					catch(e:Error){
-					uploadMessage.text = "Error uploading file: "+e.message.toString();
+					uploadMessage.text = lang("Error uploading file: ")+e.message.toString();
 				}
 				
 				
