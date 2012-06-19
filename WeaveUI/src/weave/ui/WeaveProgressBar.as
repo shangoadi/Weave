@@ -77,7 +77,7 @@ package weave.ui
 		private function handleProgressIndicatorCounterChange():void
 		{
 			var pendingCount:int = WeaveAPI.ProgressIndicator.getTaskCount();
-			var tempString:String = pendingCount + " Background Task" + (pendingCount == 1 ? '' : 's');
+			var tempString:String = pendingCount + lang(" Background Task") + (pendingCount == 1 ? '' : 's');
 			
 			label = tempString;
 			
