@@ -88,11 +88,11 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 			private static function selectionsListLabelFunction(item:Object):String
 			{
 				if (!item)
-					return lang("No selection");
+					return "No selection";
 				
 				// The label will be the name of the item followed by the record count
 				var label:String = Weave.savedSelectionKeySets.getName(item as KeySet);
-				return label + " (" + (item as KeySet).keys.length + lang(" records" + ")";
+				return label + " (" + (item as KeySet).keys.length + " records)";
 			}
 			
 			protected function itemSelected():void
