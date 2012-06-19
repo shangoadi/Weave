@@ -196,7 +196,7 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 			
 			override public function getSelectableAttributeNames():Array
 			{
-				return ["Size","Color","Anchor Dimensions"];
+				return [lang("Size"),lang("Color"),lang("Anchor Dimensions")];
 			}
 			
 			override public function getSelectableAttributes():Array

@@ -140,7 +140,7 @@
 		]]>
 	</mx:Script>
 	<ControlPanel>
-		<mx:VBox label="{lang('Settings"')}>
+		<mx:VBox label="{lang('Settings')}">
 			<mx:CheckBox label='Include "All Records" option' creationComplete="linkBindableProperty(includeAllRecordsOption, event.target, 'selected')"/>
 		</mx:VBox>
 		<editors:WindowSettingsEditor target="{this}"/>

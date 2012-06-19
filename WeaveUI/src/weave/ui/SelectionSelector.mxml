@@ -113,7 +113,7 @@ along with Weave.  If not, see <http://www.gnu.org/licenses/>.
 		]]>
 	</mx:Script>
 	<ControlPanel>
-		<mx:VBox label="{lang('Settings"')}>
+		<mx:VBox label="{lang('Settings')}">
 			<mx:CheckBox label="{lang('Include &quot;No selection&quot; option')}" creationComplete="linkBindableProperty(includeAllRecordsOption, event.target, 'selected')"/>
 		</mx:VBox>
 		<editors:WindowSettingsEditor target="{this}"/>
