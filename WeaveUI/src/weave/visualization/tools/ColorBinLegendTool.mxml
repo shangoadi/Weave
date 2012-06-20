@@ -42,7 +42,7 @@
 			import weave.utils.LinkableTextFormat;
 			import weave.visualization.plotters.ColorBinLegendPlotter;
 
-			WeaveAPI.registerImplementation(IVisTool, ColorBinLegendTool, lang("Color Legend"));
+			WeaveAPI.registerImplementation(IVisTool, ColorBinLegendTool, "Color Legend");
 			
 			private var _plotter:ColorBinLegendPlotter = null;
 			
@@ -108,7 +108,7 @@
 				if (_plotter.getInternalColorColumn() == null)
 				{
 					cRampEditor.colorRamp = null;
-					reportError("ColorBinLegendPlotter.getInternalColorColumn() is null");
+					reportError(lang("ColorBinLegendPlotter.getInternalColorColumn() is null"));
 				}
 				else
 				{

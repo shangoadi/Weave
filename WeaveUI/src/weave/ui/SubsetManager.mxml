@@ -88,9 +88,9 @@
 				// create a string for the number of included keys followed by " records"
 				// if the excluded keys are used instead, the string will be excluded keys followed by " excluded records"
 				if (keyFilter.includeMissingKeys.value)
-					return keyFilter.excluded.keys.length + lang(' excluded records');
+					return keyFilter.excluded.keys.length + ' excluded records';
 				else
-					return keyFilter.included.keys.length + lang(' records');
+					return keyFilter.included.keys.length + ' records';
 			}
 			
 			/**

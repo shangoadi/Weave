@@ -108,7 +108,7 @@
 	<mx:VBox styleName="link-box-style" width="100%" horizontalAlign="center">
 		<mx:Label text="{lang('Subset Linkage')}" fontWeight="bold" fontSize="14"/>
 		<mx:HBox horizontalGap="5">
-			<mx:CheckBox id="linkSubsetCheck" label="{lang('Link subset to:')}" toolTip="{lang('Check this box to enable linking to the group specified in the combobox to the right.')}" width="125"/>
+			<mx:CheckBox id="linkSubsetCheck" label="{lang('Link subset to:'" toolTip="{lang('Check this box to enable linking to the group specified in the combobox to the right.')}" width="125"/>
 			<ui:CustomComboBox id="linkSubsetCombo" 
 						 enabled="{linkSubsetCheck.selected}" 
 						 dataProvider="{['default', 'one', 'two', 'three']}" width="160"/>
