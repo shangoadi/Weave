@@ -82,7 +82,7 @@
 			
 			override public function getSelectableAttributeNames():Array
 			{
-				return [ "Height", "Sort", "Color"];
+				return [ lang("Height"), lang("Sort"), lang("Color")];
 			}
 			override public function getSelectableAttributes():Array
 			{
@@ -92,7 +92,7 @@
 			private function updateAxisLabels():void
 			{
 				if (!panelTitle.value)
-					title = lang("Bar Chart of ") + ColumnUtils.getTitle(_plotter.yBarEnd) + " sorted by " + ColumnUtils.getTitle(_plotter.sortColumn);
+					title = lang("Bar Chart of ") + ColumnUtils.getTitle(_plotter.yBarEnd) + lang(" sorted by ") + ColumnUtils.getTitle(_plotter.sortColumn);
 				xAxisLayer.axisPlotter.setSideAxisName(lang("Sorted by: ")+ColumnUtils.getTitle(_plotter.sortColumn), 0, 0, visualization.marginBottomNumber.value - 3, BitmapText.VERTICAL_ALIGN_BOTTOM);
 				yAxisLayer.axisPlotter.setSideAxisName(ColumnUtils.getTitle(_plotter.yBarEnd), -90, -visualization.marginLeftNumber.value, 0, BitmapText.VERTICAL_ALIGN_TOP);
 			}
@@ -104,7 +104,7 @@
 			
 			private function alphaSliderFormatFunction(item:Number):String {
             	//return int(100 - (item * 100)) + "% Transparent";
-            	return int((item * 100)) + "% Opaque" + "\n" + int(100 - (item * 100)) + "% Transparent";
+            	return int((item * 100)) + lang("% Opaque") + "\n" + int(100 - (item * 100)) + lang("% Transparent");
             }
 			
 		]]>

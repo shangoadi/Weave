@@ -90,7 +90,7 @@
 			
 			override public function getSelectableAttributeNames():Array
 			{
-				return ["Color"];
+				return [lang("Color")];
 			}
 			override public function getSelectableAttributes():Array
 			{
@@ -201,7 +201,7 @@
 			
 			override protected function get defaultPanelTitle():String
 			{
-				return "Map " + (colorColumn.internalColumn == null ? '' : "of " + ColumnUtils.getTitle(colorColumn));
+				return lang("Map ") + (colorColumn.internalColumn == null ? '' : lang("of ") + ColumnUtils.getTitle(colorColumn));
 			}
 			
 			override protected function createChildren():void
@@ -209,7 +209,7 @@
 				super.createChildren();
 				
 				var backgroundImageCheck:CheckBox = new CheckBox();
-				backgroundImageCheck.label = "Enable ocean background image";
+				backgroundImageCheck.label = lang("Enable ocean background image");
 				linkBindableProperty(enableBackground, backgroundImageCheck, "selected");
 				simpleAxisEditor.initialize();
 				simpleAxisEditor.addChild(backgroundImageCheck);
@@ -482,13 +482,13 @@
 			{
 				if (projectionVerifier(projComboBox.text))
 				{
-					projValidLabel.text = 'Valid';
+					projValidLabel.text = lang('Valid');
 					projComboBox.errorString = '';
 				}
 				else
 				{
-					projValidLabel.text = 'Invalid';
-					projComboBox.errorString = 'Unknown projection';
+					projValidLabel.text = lang('Invalid');
+					projComboBox.errorString = lang('Unknown projection');
 				}
 			}
 			
@@ -527,7 +527,7 @@
 							click="handlePanButtonClick(-1,0)"
 							 labelPlacement="left" fontSize="10" paddingBottom="0" paddingLeft="0" paddingRight="0" paddingTop="0" cornerRadius="0" textAlign="center"/>
 					<mx:Button id="zoomToExtentButton"
-							   toolTip="Click this button to zoom to map's full extent"
+							   toolTip="{lang('Click this button to zoom to map\'s full extent')}"
 							   icon="@Embed(source='/weave/resources/images/zoomToExtent.png')"
 							   fillAlphas="[1,1]" 
 							   width="16" height="16" 
@@ -594,7 +594,7 @@
 				alpha="{panModeButton.selected ? 1 : 0.5}"
 				width="17" height="17" 
 				toggle="true"
-				toolTip="Select this mode to enable panning on the map using the mouse."
+				toolTip="{lang('Select this mode to enable panning on the map using the mouse.')}"
 				click="handleMouseModeChange(event)" cornerRadius="0"/>
 			<mx:Button id="selectModeSubtractButton"
 				icon="@Embed(source='/weave/resources/images/selectMode_subtract.png')"
@@ -603,7 +603,7 @@
 				width="0" minWidth="0" height="17" 
 				visible="false"
 				toggle="true"
-				toolTip="Select this mode to enable subtracting selections from existing selections of shapes on the map using the mouse."
+				toolTip="{lang('Select this mode to enable subtracting selections from existing selections of shapes on the map using the mouse.')}"
 				click="handleMouseModeChange(event)" cornerRadius="0"
 				/>
 			<mx:Button id="selectModeButton"
@@ -612,7 +612,7 @@
 				alpha="{selectModeButton.selected ? 1 : 0.5}"
 				width="17" height="17"
 				toggle="true"
-				toolTip="Select this mode to enable adding selections to existing selections of shapes on the map using the mouse."
+				toolTip="{lang('Select this mode to enable adding selections to existing selections of shapes on the map using the mouse.')}"
 				click="handleMouseModeChange(event)" cornerRadius="0"
 				selected="true"/>
 			<mx:Button id="selectModeAddButton"
@@ -622,7 +622,7 @@
 				width="0" minWidth="0" height="17"
 				visible="false"
 				toggle="true"
-				toolTip="Select this mode to enable selection of shapes on the map using the mouse."
+				toolTip="{lang('Select this mode to enable selection of shapes on the map using the mouse.')}"
 				click="handleMouseModeChange(event)" cornerRadius="0"
 				/>
 			<mx:Button id="zoomModeButton"
@@ -631,10 +631,10 @@
 				alpha="{zoomModeButton.selected ? 1 : 0.5}"
 				width="17" height="17" 
 				toggle="true"
-				toolTip="Select this mode to enable zooming on the map using the mouse to create a box around the area you want to zoom into."
+				toolTip="{lang('Select this mode to enable zooming on the map using the mouse to create a box around the area you want to zoom into.')}"
 				click="handleMouseModeChange(event)" cornerRadius="0"/>
 			<mx:Button id="zoomControlsMinimizeCheck"
-					   toolTip="Enable/Disable Zoom and Pan"
+					   toolTip="{lang('Enable/Disable Zoom and Pan')}"
 					   width="17" height="17" toggle="true"
 					   selected="{!zoomControlsToggle.selected}"
 					   change="handleZoomControlsMinimizeCheck()"/>
@@ -643,11 +643,11 @@
 	
 
 	<ui:ControlPanel>
-		<mx:VBox id="attributesPanel" label="Map Layers">
+		<mx:VBox id="attributesPanel" label="{lang('Map Layers')}">
 			<mx:HBox width="100%">
-				<mx:Button label="Add Base Map" click="addWMSLayer();" toolTip="Add an image layer underneath the geometries"/>
-				<mx:Button label="Add Geometry" click="addGeomLayer();" toolTip="Add a layer of polygons, lines, or points that can be colored according to the data"/>
-				<mx:Button label="Add Labels" click="addLabelLayer();" toolTip="Add labels to the selected geometry layer"/>
+				<mx:Button label="{lang('Add Base Map')}" click="addWMSLayer();" toolTip="{lang('Add an image layer underneath the geometries')}"/>
+				<mx:Button label="{lang('Add Geometry')}" click="addGeomLayer();" toolTip="{lang('Add a layer of polygons, lines, or points that can be colored according to the data')}"/>
+				<mx:Button label="{lang('Add Labels')}" click="addLabelLayer();" toolTip="{lang('Add labels to the selected geometry layer')}"/>
 			</mx:HBox>
 			
 			<!--<mx:DataGrid dataProvider="{_layerNames.reverse()}">
@@ -663,16 +663,16 @@
 			<managers:PlotLayerEditor id="layerEditor" creationComplete="layerEditor.visualization = visualization"/>
 			<mx:HBox width="100%" verticalAlign="middle">
 				<ui:DynamicColumnComponent label="color" showLinkControl="false" visTool="{this}" creationComplete="(event.target as DynamicColumnComponent).dynamicObject = colorColumn"/>
-				<mx:Button label="Edit Bins..." click="DraggablePanel.openStaticInstance(ColorController);"/>
+				<mx:Button label="{lang('Edit Bins...')}" click="DraggablePanel.openStaticInstance(ColorController);"/>
 			</mx:HBox>
 		</mx:VBox>
-		<mx:VBox label="Advanced" verticalGap="10">
-			<mx:CheckBox label="Enable Map Overview Window" id="overviewCheckBox"
+		<mx:VBox label="{lang('Advanced')}" verticalGap="10">
+			<mx:CheckBox label="{lang('Enable Map Overview Window')}" id="overviewCheckBox"
 						 creationComplete="linkBindableProperty(enableOverview,event.target,'selected')"/>
 			<mx:HBox verticalAlign="bottom">
-				<mx:Button label="Zoom to full extent" click="visualization.zoomToSelection()" />
+				<mx:Button label="{lang('Zoom to full extent')}" click="visualization.zoomToSelection()" />
 				<mx:VBox verticalGap="1">
-					<mx:Label text="Coordinates at map center:" fontWeight="bold"/>
+					<mx:Label text="{lang('Coordinates at map center:')}" fontWeight="bold"/>
 					<mx:HBox horizontalGap="0" borderStyle="outset" horizontalAlign="center">
 						<mx:Label text="(x: "/>
 						<!--<mx:TextInput id="xCenterCoord" width="50" change="setCenterCoords()" editable="false"/>-->
@@ -685,7 +685,7 @@
 				</mx:VBox>
 			</mx:HBox>
 			<mx:HBox verticalAlign="center" horizontalAlign="center">
-				<mx:Label text="Projection"/> 
+				<mx:Label text="{lang('Projection')}"/> 
 				<ui:CustomComboBox id="projComboBox"
 								   dataProvider="{_projComboBoxData}"
 								   creationComplete="linkBindableProperty(projectionSRS, event.target, 'text');"
@@ -701,22 +701,22 @@
 					/>-->
 				<mx:Label id="projValidLabel" fontWeight="bold"/>
 			</mx:HBox>
-			<mx:CheckBox id="probeColumnsCheckBox" label="Include tool attributes in probe tooltip"
-						 toolTip="Checking this box makes all of the tool's attributes visible in this tool's probe tooltip"
+			<mx:CheckBox id="probeColumnsCheckBox" label="{lang('Include tool attributes in probe tooltip')}"
+						 toolTip="{lang('Checking this box makes all of the tool\'s attributes visible in this tool\'s probe tooltip')}"
 						 creationComplete="linkBindableProperty(includeToolAttributesInProbe,event.target,'selected')"/>
-			<mx:CheckBox id="zoomControlsToggle" label="Enable zoom and pan"
-						 toolTip="This option enables the zoom slider and pan buttons"
+			<mx:CheckBox id="zoomControlsToggle" label="{lang('Enable zoom and pan')}"
+						 toolTip="{lang('This option enables the zoom slider and pan buttons')}"
 						 creationComplete="linkBindableProperty(showZoomControls,event.target,'selected')"/>
-			<mx:CheckBox id="mouseModeControlsToggle" label="Show mouse mode controls"
-						 toolTip="This option enables the mouse mode buttons"
+			<mx:CheckBox id="mouseModeControlsToggle" label="{lang('Show mouse mode controls')}"
+						 toolTip="{lang('This option enables the mouse mode buttons')}"
 						 creationComplete="linkBindableProperty(showMouseModeControls,event.target,'selected')"/>
 			<mx:HBox>
-				<mx:Label text="Mouse wheel scroll factor:" />
+				<mx:Label text="{lang('Mouse wheel scroll factor:')}" />
 				<mx:NumericStepper maximum="10" minimum="1" stepSize=".01" creationComplete="linkBindableProperty(this.visualization.zoomFactor, event.target, 'value')"/>
 			</mx:HBox>
 		</mx:VBox>
-		<mx:VBox label="Layer Visibility" verticalGap="10" id="visibleScaleRangesUI">
-			<ui:Indent label="Current Zoom" labelTextAlign="left" group="{scaleRangeIndentGroup}">
+		<mx:VBox label="{lang('Layer Visibility')}" verticalGap="10" id="visibleScaleRangesUI">
+			<ui:Indent label="{lang('Current Zoom')}" labelTextAlign="left" group="{scaleRangeIndentGroup}">
 				<mx:HSlider id="scaleRangeTabZoomSlider" 
 							width="100%" 
 							tickInterval="1"
