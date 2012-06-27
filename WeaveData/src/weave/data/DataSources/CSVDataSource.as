@@ -139,7 +139,7 @@ package weave.data.DataSources
 			{
 				// if url is specified, do not use csvDataString
 				csvDataString.value = null;
-				WeaveAPI.URLRequestUtils.getURL(new URLRequest(url.value), handleCSVDownload, handleCSVDownloadError, url.value, URLLoaderDataFormat.TEXT);
+				WeaveAPI.URLRequestUtils.getURL(this, new URLRequest(url.value), handleCSVDownload, handleCSVDownloadError, url.value, URLLoaderDataFormat.TEXT);
 			}
 		}
 		

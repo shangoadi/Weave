@@ -253,7 +253,7 @@ package weave
 				// load the session state file
 				var fileName:String = getFlashVarConfigFileName() || DEFAULT_CONFIG_FILE_NAME;
 				var noCacheHack:String = "?" + (new Date()).getTime(); // prevent flex from using cache
-				WeaveAPI.URLRequestUtils.getURL(new URLRequest(fileName + noCacheHack), handleConfigFileDownloaded, handleConfigFileFault, fileName);
+				WeaveAPI.URLRequestUtils.getURL(null, new URLRequest(fileName + noCacheHack), handleConfigFileDownloaded, handleConfigFileFault, fileName);
 			}
 		}
 		private function handleConfigFileDownloaded(event:ResultEvent = null, token:Object = null):void

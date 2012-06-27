@@ -607,16 +607,18 @@ package weave.core
 		private const _dBusyTraversal:Dictionary = new Dictionary(true); // ILinkableObject -> Boolean
 		
 		/**
-		 * 
-		 * @param taskToken
-		 * @param linkableObject
+		 * @param taskToken A token representing an asynchronous task.
+		 * @param busyObject The object that is busy waiting for the task to complete.
 		 */		
-		public function assignBusyTask(taskToken:Object, linkableObject:ILinkableObject):void
+		public function assignBusyTask(taskToken:Object, busyObject:ILinkableObject):void
 		{
-			_d2dOwnerTask.set(linkableObject, taskToken, true);
-			_d2dTaskOwner.set(taskToken, linkableObject, true);
+			_d2dOwnerTask.set(busyObject, taskToken, true);
+			_d2dTaskOwner.set(taskToken, busyObject, true);
 		}
 		
+		/**
+		 * @param taskToken A token representing an asynchronous task.
+		 */
 		public function unassignBusyTask(taskToken:Object):void
 		{
 			var dOwner:Dictionary = _d2dTaskOwner.dictionary[taskToken];

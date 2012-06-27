@@ -31,7 +31,11 @@ package weave.data.AttributeColumns
 	import weave.api.setSessionState;
 	import weave.core.CallbackCollection;
 	import weave.core.LinkableDynamicObject;
+	import weave.core.SessionManager;
+	import weave.core.weave_internal;
 	import weave.utils.ColumnUtils;
+	
+	use namespace weave_internal;
 	
 	/**
 	 * This provides a wrapper for a referenced column.
@@ -69,12 +73,12 @@ package weave.data.AttributeColumns
 				return;
 			
 			if (_internalColumn != null)
-				_internalColumn.removeCallback(triggerCallbacks);
+				(WeaveAPI.SessionManager as SessionManager).unregisterLinkableChild(this, _internalColumn);
 
 			_internalColumn = newColumn;
 			
 			if (_internalColumn != null)
-				_internalColumn.addImmediateCallback(this, triggerCallbacks, false, true); // parent-child relationship
+				registerLinkableChild(this, _internalColumn);
 		}
 		
 		/**

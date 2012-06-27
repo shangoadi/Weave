@@ -180,7 +180,7 @@ package weave.data.DataSources
 			{
 				if (hierarchyURL.value != "" && hierarchyURL.value != null)
 				{
-					WeaveAPI.URLRequestUtils.getURL(new URLRequest(hierarchyURL.value), handleHierarchyURLDownload, handleHierarchyURLDownloadError);
+					WeaveAPI.URLRequestUtils.getURL(this, new URLRequest(hierarchyURL.value), handleHierarchyURLDownload, handleHierarchyURLDownloadError);
 					trace("hierarchy url "+hierarchyURL.value);
 					return;
 				}

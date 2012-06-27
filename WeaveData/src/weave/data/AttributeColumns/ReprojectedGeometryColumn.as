@@ -21,13 +21,18 @@ package weave.data.AttributeColumns
 {
 	import weave.api.WeaveAPI;
 	import weave.api.core.ICallbackCollection;
+	import weave.api.core.ILinkableObject;
 	import weave.api.data.AttributeColumnMetadata;
 	import weave.api.data.IAttributeColumn;
 	import weave.api.data.IColumnReference;
 	import weave.api.data.IQualifiedKey;
+	import weave.api.getCallbackCollection;
+	import weave.api.juggleImmediateCallback;
 	import weave.api.newLinkableChild;
+	import weave.api.registerLinkableChild;
 	import weave.core.CallbackCollection;
 	import weave.core.LinkableString;
+	import weave.core.SessionManager;
 	import weave.core.weave_internal;
 	import weave.utils.ColumnUtils;
 
@@ -45,18 +50,12 @@ package weave.data.AttributeColumns
 			// force the internal column to always be a ReferencedColumn
 			internalDynamicColumn.requestLocalObject(ReferencedColumn, true);
 			addImmediateCallback(this, updateReprojectedColumn);
-			
-			_boundingBoxCallbacks.addImmediateCallback(this, function():*{});
 		}
 		
-		private var _boundingBoxCallbacks:CallbackCollection = newLinkableChild(this, CallbackCollection);
 		/**
 		 * These callbacks are triggered when the list of keys or bounding boxes change.
 		 */		
-		public function get boundingBoxCallbacks():ICallbackCollection
-		{
-			return _boundingBoxCallbacks;
-		}
+		public const boundingBoxCallbacks:ICallbackCollection = newLinkableChild(this, CallbackCollection);
 		
 		override public function getMetadata(propertyName:String):String
 		{
@@ -92,23 +91,58 @@ package weave.data.AttributeColumns
 			if (_reprojectedColumn == newColumn)
 				return;
 			
+			delayCallbacks();
+			
 			if (_reprojectedColumn)
+			{
+				(WeaveAPI.SessionManager as SessionManager).unregisterLinkableChild(this, _reprojectedColumn);
 				_reprojectedColumn.removeCallback(handleReprojectedColumnChange);
+			}
 			
 			_reprojectedColumn = newColumn;
 			
 			if (_reprojectedColumn)
-				_reprojectedColumn.addImmediateCallback(this, handleReprojectedColumnChange, true, true); // parent-child relationship
+			{
+				registerLinkableChild(this, _reprojectedColumn);
+				_reprojectedColumn.addImmediateCallback(this, handleReprojectedColumnChange);
+			}
+			
+			handleReprojectedColumnChange();
+			triggerCallbacks();
+			resumeCallbacks();
 		}
 		
-		private function handleReprojectedColumnChange():void
+		private function handleReprojectedColumnChange(cleanup:Boolean = false):void
 		{
 			// if _unprojectedColumn is not null, it means there is no reprojection to do.
 			var _unprojectedColumn:StreamedGeometryColumn = ColumnUtils.hack_findNonWrapperColumn(_reprojectedColumn) as StreamedGeometryColumn;
-			if (_unprojectedColumn)
-				_unprojectedColumn.boundingBoxCallbacks.addImmediateCallback(this, _boundingBoxCallbacks.triggerCallbacks);
-			else
-				_boundingBoxCallbacks.triggerCallbacks();
+			
+			// get the callback target that should trigger boundingBoxCallbacks
+			var target:ILinkableObject = _unprojectedColumn ? _unprojectedColumn.boundingBoxCallbacks : _reprojectedColumn;
+			
+			if (_prevBBTarget != target)
+			{
+				juggleImmediateCallback(_prevBBTarget, target, this, boundingBoxCallbacks.triggerCallbacks);
+				boundingBoxCallbacks.triggerCallbacks();
+				_prevBBTarget = target;
+			}
+		}
+		
+		private var _prevBBTarget:ILinkableObject = null;
+		
+		// adds a callback and a _cleanup entry
+		private function _addCallback(target:ILinkableObject, callback:Function, callNow:Boolean):void
+		{
+			getCallbackCollection(target).addImmediateCallback(this, callback, callNow);
+			_cleanup.push(arguments);
+		}
+		// remembers callbacks to be cleaned up
+		private const _cleanup:Array = []; // [[ILinkableObject, Function], ...]
+		// cleans up all entries in _cleanup array
+		private function _cleanupCallbacks():void
+		{
+			for each (var pair:Array in _cleanup)
+				getCallbackCollection(pair[0]).removeCallback(pair[1]);
 		}
 		
 		private var _reprojectedColumn:IAttributeColumn = null;

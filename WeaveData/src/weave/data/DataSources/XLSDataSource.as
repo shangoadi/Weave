@@ -68,7 +68,7 @@ package weave.data.DataSources
 			{
 				var urlRequest:URLRequest = new URLRequest(url.value);
 				urlRequest.contentType = "application/vnd.ms-excel";
-				WeaveAPI.URLRequestUtils.getURL(urlRequest, handleXLSDownload, handleXLSDownloadError, null, URLLoaderDataFormat.BINARY);
+				WeaveAPI.URLRequestUtils.getURL(this, urlRequest, handleXLSDownload, handleXLSDownloadError, null, URLLoaderDataFormat.BINARY);
 			}
 		}
 

@@ -292,6 +292,8 @@ package weave.core
 					if (!WeaveAPI.SessionManager.objectWasDisposed(args[0]))
 						(args[1] as Function).apply(null, args[2]);
 					
+					//(WeaveAPI.SessionManager as SessionManager).unassignBusyTask(args);
+					
 					if (debug_callLater)
 						DebugTimer.end(stackTrace);
 				}
@@ -366,6 +368,8 @@ package weave.core
 					(args[1] as Function).apply(null, args[2]);
 				}
 				
+				//(WeaveAPI.SessionManager as SessionManager).unassignBusyTask(args);
+				
 				if (debug_callLater)
 					DebugTimer.end(stackTrace);
 			}
@@ -381,6 +385,8 @@ package weave.core
 		 */
 		public function callLater(relevantContext:Object, method:Function, parameters:Array = null, priority:uint = 2):void
 		{
+			//(WeaveAPI.SessionManager as SessionManager).assignBusyTask(arguments, relevantContext as ILinkableObject);
+			
 			if (priority >= _priorityCallLaterQueues.length)
 			{
 				reportError("Invalid priority value: " + priority);
